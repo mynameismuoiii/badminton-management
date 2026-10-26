@@ -1,0 +1,19 @@
+
+# Maven
+target/
+
+# Database credentials
+src/main/resources/db.properties
+.env
+
+# VS Code / IntelliJ / Eclipse
+.vscode/settings.json
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
