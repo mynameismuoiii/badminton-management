@@ -1,57 +1,26 @@
+# Badminton Management (Java Swing + MySQL)
 
-# Badminton Court Management
+Starter cho nhóm hai người. Đã có cấu trúc thư mục, model dạng `record`, DAO/service contract, giao diện điều hướng Swing, SQL schema/seed, và util cơ bản. **Chức năng nghiệp vụ chưa triển khai**; những phương thức cần làm ném `UnsupportedOperationException` để tránh hiểu nhầm có thể dùng ngay.
 
-Ung dung quan ly va toi uu lich dat san cau long.
+## Yêu cầu
+- JDK 21, Maven 3.9+, MySQL 8+
 
-## Cong nghe
-
-- Java 21
-- Java Swing
-- Maven
-- JDBC
-- MySQL
-- JUnit 5
-- VS Code
-
-## Chuc nang du kien
-
-1. Dang nhap
-2. Quan ly san
-3. Quan ly khach hang
-4. Dat san
-5. Kiem tra lich trung
-6. Tim san trong
-7. Goi y khung gio thay the
-8. Thanh toan
-9. Thong ke doanh thu
-
-## Cach chay
-
-mvn clean compile
-
+## Chạy UI mẫu
+```bash
+mvn clean test
 mvn exec:java
+```
+Mở cửa sổ MainFrame và chuyển giữa 7 màn hình placeholder (không cần DB cho UI mẫu).
 
-## Phan chia cong viec
+## Cấu hình database
+1. Chạy `database/schema.sql` và `database/seed.sql` trong MySQL.
+2. Copy `src/main/resources/db.properties.example` thành `src/main/resources/db.properties`.
+3. Đổi username, password trên máy riêng. File thật đã được `.gitignore`.
 
-### Nguoi 1
+## Phân công
+Xem `docs/TASK_ASSIGNMENT.md`, `docs/TEAM_CONTRACT.md` và `docs/INTEGRATION_GUIDE.md`.
 
-- Database
-- Dang nhap
-- Quan ly san
-- Quan ly khach hang
-- Dat va huy san
-
-### Nguoi 2
-
-- Kiem tra trung lich
-- Tim san trong
-- Goi y lich thay the
-- Thanh toan
-- Thong ke
-
-## Ghi chu
-
-Day la project Java Swing su dung Maven.
-
-Chuc nang nghiep vu va database se duoc
-tung thanh vien trien khai.
+## Điểm cần hoàn thiện
+- N1: Login, customer, booking, payment (gồm xác thực mật khẩu an toàn và giao dịch kiểm tra trùng booking).
+- N2: Court CRUD, lịch, gợi ý, thống kê.
+- CHUNG: kết nối LoginFrame -> MainFrame, tích hợp/test, kiểm tra SQL và constraints.

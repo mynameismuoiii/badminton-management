@@ -1,0 +1,3 @@
+db.url=jdbc:mysql://localhost:3306/badminton_management?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh
+db.username=root
+db.password=CHANGE_ME

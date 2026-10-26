@@ -1,11 +1,14 @@
-
 package com.badminton;
 
-import com.badminton.view.MainFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
-public class Main {
+import com.badminton.view.MainFrame;
+
+public final class Main {
+
+    private Main() {
+    }
 
     public static void main(String[] args) {
 
@@ -16,11 +19,13 @@ public class Main {
                     UIManager.getSystemLookAndFeelClassName()
                 );
             } catch (Exception ignored) {
-                // Su dung giao dien mac dinh
             }
 
-            new MainFrame().setVisible(true);
+            // TODO N1:
+            // Sau khi hoàn thiện đăng nhập,
+            // đổi thành new LoginFrame().setVisible(true);
 
+            new MainFrame().setVisible(true);
         });
     }
 }
