@@ -1,31 +1,40 @@
 package com.badminton;
 
+import com.badminton.ui.AuthFrame;
+import com.badminton.util.AppFonts;
+
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
-import com.badminton.view.MainFrame;
-
 public final class Main {
 
-    private Main() {
-    }
+    private Main() {}
 
     public static void main(String[] args) {
-
         SwingUtilities.invokeLater(() -> {
 
             try {
                 UIManager.setLookAndFeel(
-                    UIManager.getSystemLookAndFeelClassName()
+                    UIManager.getCrossPlatformLookAndFeelClassName()
                 );
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
 
-            // TODO N1:
-            // Sau khi hoàn thiện đăng nhập,
-            // đổi thành new LoginFrame().setVisible(true);
+            UIManager.put("Label.font", AppFonts.regular(14f));
+            UIManager.put("Button.font", AppFonts.medium(14f));
+            UIManager.put("TextField.font", AppFonts.regular(14f));
+            UIManager.put("PasswordField.font", AppFonts.regular(14f));
 
-            new MainFrame().setVisible(true);
+            UIManager.put(
+                "OptionPane.messageFont",
+                AppFonts.regular(14f)
+            );
+
+            UIManager.put(
+                "OptionPane.buttonFont",
+                AppFonts.medium(13f)
+            );
+
+            new AuthFrame().setVisible(true);
         });
     }
 }
