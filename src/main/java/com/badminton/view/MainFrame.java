@@ -13,6 +13,7 @@ import java.util.Objects;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import java.util.Set;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 
 public class MainFrame extends JFrame {
@@ -21,26 +22,17 @@ public class MainFrame extends JFrame {
     // COLORS
     // =========================
 
-    private static final Color SIDEBAR =
-            new Color(7, 57, 51);
+    // Same palette as AuthView's welcoming / loading background.
+    private static final Color SPLASH_START = new Color(7, 39, 37);
+    private static final Color SPLASH_END = new Color(10, 86, 76);
 
-    private static final Color SIDEBAR_DARK =
-            new Color(5, 45, 41);
-
-    private static final Color PRIMARY =
-            new Color(47, 201, 174);
-
-    private static final Color PRIMARY_DARK =
-            new Color(24, 156, 139);
-
-    private static final Color CONTENT_BG =
-            new Color(243, 248, 247);
-
-    private static final Color TEXT =
-            new Color(28, 55, 50);
-
-    private static final Color MUTED =
-            new Color(116, 137, 133);
+    private static final Color SIDEBAR = SPLASH_START;
+    private static final Color SIDEBAR_DARK = SPLASH_START;
+    private static final Color PRIMARY = new Color(72, 222, 190);
+    private static final Color PRIMARY_DARK = new Color(22, 147, 151);
+    private static final Color CONTENT_BG = new Color(240, 248, 245);
+    private static final Color TEXT = new Color(9, 52, 48);
+    private static final Color MUTED = new Color(105, 135, 130);
 
 
     // =========================
@@ -67,6 +59,12 @@ public class MainFrame extends JFrame {
     private String currentScreen;
     private final User currentUser;
     private final boolean admin;
+
+    // Screens in this group are never registered or opened for CUSTOMER.
+    // This is a Swing-side access check, not a replacement for DB/server authorization.
+    private static final Set<String> ADMIN_SCREENS = Set.of(
+            "Quản lý sân", "Quản lý khách hàng", "Thống kê & báo cáo"
+    );
     private BookingPanel bookingPanel;
     private PaymentPanel paymentPanel;
 
@@ -145,7 +143,7 @@ public class MainFrame extends JFrame {
 
 
         // =========================
-        // SCREENS: THEME shell + COMBINED business functions
+        // SCREENS - two menu groups, with an independent read-only court list.
         // =========================
 
         paymentPanel = new PaymentPanel(currentUser);
@@ -154,33 +152,40 @@ public class MainFrame extends JFrame {
             showScreen("Thanh toán");
         });
 
+        // KHÁM PHÁ & ĐẶT SÂN: visible to ADMIN and CUSTOMER.
         registerScreen("Tổng quan", createHomePanel());
-        if (admin) {
-            // Admin co quyen quan ly san va khach hang.
-            registerScreen("Sân", new CourtPanel());
-            registerScreen("Khách hàng", new CustomerPanel());
-        } else {
-            // Customer chi xem san, va dat tren san da chon.
-            registerScreen("Sân", new CustomerCourtListPanel(courtId -> {
-                bookingPanel.selectCourt(courtId);
-                showScreen("Đặt sân");
-            }));
-        }
+        registerScreen("Danh sách sân", new CustomerCourtListPanel(courtId -> {
+            bookingPanel.selectCourt(courtId);
+            showScreen("Đặt sân");
+        }));
         registerScreen("Đặt sân", bookingPanel);
-        registerScreen("Lịch sân", new SchedulePanel());
-        registerScreen("Gợi ý sân", new SuggestionPanel());
+        registerScreen("Lịch đặt sân", new SchedulePanel());
+        registerScreen("Khám phá sân", new SuggestionPanel());
         registerScreen("Thanh toán", paymentPanel);
+
+        // QUẢN TRỊ HỆ THỐNG: register only for ADMIN.
         if (admin) {
-            registerScreen("Thống kê", new StatisticsPanel());
+            registerScreen("Quản lý sân", new CourtPanel());
+            registerScreen("Quản lý khách hàng", new CustomerPanel());
+            registerScreen("Thống kê & báo cáo", new StatisticsPanel());
         }
 
-        // Chi hien menu cho cac man hinh duoc cap quyen.
-        for (String screenName : screens.keySet()) {
-            addMenuButton(screenName);
+        addMenuHeading("KHÁM PHÁ & ĐẶT SÂN", false);
+        for (String name : new String[]{
+                "Tổng quan", "Danh sách sân", "Đặt sân", "Lịch đặt sân",
+                "Khám phá sân", "Thanh toán"
+        }) {
+            addMenuButton(name);
         }
 
-        menuPanel.add(Box.createVerticalGlue());
-        menuPanel.add(createLogoutButton());
+        if (admin) {
+            addMenuHeading("QUẢN TRỊ HỆ THỐNG", true);
+            for (String name : new String[]{
+                    "Quản lý sân", "Quản lý khách hàng", "Thống kê & báo cáo"
+            }) {
+                addMenuButton(name);
+            }
+        }
 
         showScreen("Tổng quan");
     }
@@ -191,28 +196,120 @@ public class MainFrame extends JFrame {
     // ============================================================
 
     private JPanel createSidebar() {
-        JPanel sidebar = new JPanel(new BorderLayout());
-        sidebar.setPreferredSize(new Dimension(250, 0));
-        sidebar.setBackground(SIDEBAR);
+        JPanel outer = new JPanel(new BorderLayout());
+        outer.setBackground(CONTENT_BG);
+        outer.setBorder(new EmptyBorder(9, 10, 9, 8));
+        outer.setPreferredSize(new Dimension(300, 0));
 
-        // Logo nam giua thanh menu; khong hien subtitle.
+        JPanel card = new SidebarCard();
+        card.setLayout(new BorderLayout());
+        card.setBorder(new EmptyBorder(4, 0, 4, 0));
+        outer.add(card, BorderLayout.CENTER);
+
         JPanel brand = new JPanel(new GridBagLayout());
         brand.setOpaque(false);
-        brand.setBorder(new EmptyBorder(30, 10, 22, 10));
-
+        brand.setBorder(new EmptyBorder(23, 10, 19, 10));
         JLabel logo = new JLabel("TH - MINTON", SwingConstants.CENTER);
         logo.setForeground(Color.WHITE);
-        logo.setFont(AppFonts.fredoka(27f));
+        logo.setFont(AppFonts.fredoka(25f));
         brand.add(logo);
-        sidebar.add(brand, BorderLayout.NORTH);
+        card.add(brand, BorderLayout.NORTH);
 
         menuPanel.setOpaque(false);
         menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
-        menuPanel.setBorder(new EmptyBorder(12, 16, 20, 16));
-        sidebar.add(menuPanel, BorderLayout.CENTER);
-        return sidebar;
+        menuPanel.setBorder(new EmptyBorder(0, 12, 10, 12));
+
+        JScrollPane menuScroll = new JScrollPane(menuPanel,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        menuScroll.setBorder(null);
+        menuScroll.setOpaque(false);
+        menuScroll.getViewport().setOpaque(false);
+        menuScroll.getVerticalScrollBar().setUnitIncrement(14);
+        menuScroll.getVerticalScrollBar().setPreferredSize(new Dimension(6, 0));
+        menuScroll.getVerticalScrollBar().setUI(new BasicScrollBarUI() {
+            @Override protected void configureScrollBarColors() {
+                thumbColor = new Color(72, 169, 151);
+                trackColor = SIDEBAR;
+            }
+            @Override protected JButton createDecreaseButton(int orientation) {
+                return zeroButton();
+            }
+            @Override protected JButton createIncreaseButton(int orientation) {
+                return zeroButton();
+            }
+            private JButton zeroButton() {
+                JButton button = new JButton();
+                button.setPreferredSize(new Dimension(0, 0));
+                return button;
+            }
+        });
+        card.add(menuScroll, BorderLayout.CENTER);
+
+        JPanel footer = new JPanel(new BorderLayout(0, 11));
+        footer.setOpaque(false);
+        footer.setBorder(new EmptyBorder(8, 12, 15, 12));
+        JSeparator separator = new JSeparator();
+        separator.setForeground(new Color(82, 151, 138));
+        separator.setBackground(new Color(82, 151, 138));
+        footer.add(separator, BorderLayout.NORTH);
+        footer.add(createLogoutButton(), BorderLayout.CENTER);
+        card.add(footer, BorderLayout.SOUTH);
+
+        return outer;
     }
 
+    private void addMenuHeading(String title, boolean withDivider) {
+        if (withDivider) {
+            menuPanel.add(Box.createVerticalStrut(9));
+            JSeparator separator = new JSeparator();
+            separator.setForeground(new Color(82, 151, 138));
+            separator.setBackground(new Color(82, 151, 138));
+            separator.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+            separator.setAlignmentX(Component.LEFT_ALIGNMENT);
+            menuPanel.add(separator);
+            menuPanel.add(Box.createVerticalStrut(15));
+        } else {
+            menuPanel.add(Box.createVerticalStrut(4));
+        }
+
+        JPanel heading = new JPanel(new BorderLayout());
+        heading.setOpaque(false);
+        heading.setBorder(new EmptyBorder(0, 10, 7, 0));
+        heading.setAlignmentX(Component.LEFT_ALIGNMENT);
+        heading.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        heading.setPreferredSize(new Dimension(240, 30));
+        JLabel text = new JLabel(title);
+        text.setForeground(new Color(165, 203, 193));
+        text.setFont(AppFonts.medium(11.5f));
+        heading.add(text, BorderLayout.WEST);
+        menuPanel.add(heading);
+    }
+
+    // Match AuthView: deep forest green, soft mint glow, rounded shell.
+    private static class SidebarCard extends JPanel {
+        SidebarCard() { setOpaque(false); }
+
+        @Override protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth(), h = getHeight();
+            g2.setClip(new java.awt.geom.RoundRectangle2D.Float(
+                    0, 0, w, h, 20, 20));
+            g2.setPaint(new GradientPaint(0, 0, SPLASH_START,
+                    w * 0.70f, h, SPLASH_END));
+            g2.fillRect(0, 0, w, h);
+            g2.setPaint(new RadialGradientPaint(
+                    new Point(w / 2, h / 3), Math.max(240, h / 2),
+                    new float[]{0f, 1f},
+                    new Color[]{new Color(78, 216, 190, 37),
+                            new Color(78, 216, 190, 0)}));
+            g2.fillRect(0, 0, w, h);
+            g2.dispose();
+        }
+    }
 
     // ============================================================
     // HEADER
@@ -226,7 +323,7 @@ public class MainFrame extends JFrame {
                 );
 
         header.setBackground(
-                Color.WHITE
+                new Color(250, 253, 251)
         );
 
         header.setPreferredSize(
@@ -294,11 +391,7 @@ public class MainFrame extends JFrame {
         avatar.setOpaque(true);
 
         avatar.setBackground(
-                new Color(
-                        220,
-                        248,
-                        241
-                )
+                new Color(217, 249, 239)
         );
 
         avatar.setForeground(
@@ -339,13 +432,11 @@ public class MainFrame extends JFrame {
     // MENU BUTTON
     // ============================================================
 
-    private void addMenuButton(
-            String name
-    ) {
-
-        NavButton button =
-                new NavButton(name);
-
+    private void addMenuButton(String name) {
+        if (!screens.containsKey(name)) {
+            throw new IllegalArgumentException("Menu without screen: " + name);
+        }
+        NavButton button = new NavButton(name, iconForScreen(name));
         button.addActionListener(e -> {
             if ("Đặt sân".equals(name)) {
                 bookingPanel.refreshData();
@@ -354,24 +445,26 @@ public class MainFrame extends JFrame {
             }
             showScreen(name);
         });
-
-        navButtons.put(
-                name,
-                button
-        );
-
+        navButtons.put(name, button);
+        button.setAlignmentX(Component.LEFT_ALIGNMENT);
         menuPanel.add(button);
-
-        menuPanel.add(
-                Box.createRigidArea(
-                        new Dimension(
-                                0,
-                                8
-                        )
-                )
-        );
+        menuPanel.add(Box.createVerticalStrut(5));
     }
 
+    private static String iconForScreen(String name) {
+        return switch (name) {
+            case "Tổng quan" -> "overview";
+            case "Danh sách sân" -> "list";
+            case "Đặt sân" -> "booking";
+            case "Lịch đặt sân" -> "calendar";
+            case "Khám phá sân" -> "explore";
+            case "Thanh toán" -> "payment";
+            case "Quản lý sân" -> "court";
+            case "Quản lý khách hàng" -> "users";
+            case "Thống kê & báo cáo" -> "stats";
+            default -> "overview";
+        };
+    }
 
     // ============================================================
     // REGISTER SCREEN
@@ -381,6 +474,10 @@ public class MainFrame extends JFrame {
         String name,
         JPanel panel
     ) {
+
+        if (!admin && ADMIN_SCREENS.contains(name)) {
+            throw new SecurityException("CUSTOMER không được đăng ký: " + name);
+        }
 
         if (screens.containsKey(name)) {
 
@@ -411,6 +508,11 @@ public class MainFrame extends JFrame {
     public void showScreen(
             String name
     ) {
+
+        // Validate access on navigation, even when called directly in code.
+        if (!admin && ADMIN_SCREENS.contains(name)) {
+            throw new SecurityException("Bạn không có quyền truy cập: " + name);
+        }
 
         if (!screens.containsKey(name)) {
 
@@ -523,13 +625,7 @@ public class MainFrame extends JFrame {
                 Component.CENTER_ALIGNMENT
         );
 
-        smallTitle.setForeground(
-                new Color(
-                        110,
-                        232,
-                        209
-                )
-        );
+        smallTitle.setForeground(new Color(105, 243, 210));
 
         // Bold that remains visible even with variable font files.
         smallTitle.setFont(
@@ -572,13 +668,7 @@ public class MainFrame extends JFrame {
                 SwingConstants.CENTER
         );
 
-        heroDescription.setForeground(
-                new Color(
-                        225,
-                        240,
-                        237
-                )
-        );
+        heroDescription.setForeground(new Color(232, 249, 243));
 
         heroDescription.setFont(
                 AppFonts.regular(14f)
@@ -937,84 +1027,20 @@ public class MainFrame extends JFrame {
     // ============================================================
 
     private JButton createLogoutButton() {
-
-        JButton logout =
-                new JButton(
-                        "Đăng xuất"
-                );
-
-        logout.setMaximumSize(
-                new Dimension(
-                        Integer.MAX_VALUE,
-                        46
-                )
-        );
-
-        logout.setPreferredSize(
-                new Dimension(
-                        200,
-                        46
-                )
-        );
-
-        logout.setFont(
-                AppFonts.bold(14f)
-        );
-
-        logout.setForeground(
-                new Color(
-                        221,
-                        238,
-                        235
-                )
-        );
-
-        logout.setBackground(
-                SIDEBAR_DARK
-        );
-
-        logout.setFocusPainted(
-                false
-        );
-
-        logout.setBorderPainted(
-                false
-        );
-
-        logout.setCursor(
-                Cursor.getPredefinedCursor(
-                        Cursor.HAND_CURSOR
-                )
-        );
-
-        logout.addActionListener(
-                e -> {
-
-                    int choice =
-                            JOptionPane
-                                    .showConfirmDialog(
-                                            this,
-                                            "Bạn có muốn đăng xuất?",
-                                            "TH - MINTON",
-                                            JOptionPane.YES_NO_OPTION
-                                    );
-
-                    if (
-                            choice
-                            == JOptionPane.YES_OPTION
-                    ) {
-
-                        dispose();
-
-                        new AuthFrame()
-                                .setVisible(true);
-                    }
-                }
-        );
-
+        NavButton logout = new NavButton("Đăng xuất", "logout");
+        logout.setPreferredSize(new Dimension(240, 48));
+        logout.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+        logout.addActionListener(e -> {
+            int choice = JOptionPane.showConfirmDialog(this,
+                    "Bạn có muốn đăng xuất?", "TH - MINTON",
+                    JOptionPane.YES_NO_OPTION);
+            if (choice == JOptionPane.YES_OPTION) {
+                dispose();
+                new AuthFrame().setVisible(true);
+            }
+        });
         return logout;
     }
-
 
     // ============================================================
     // HOME HERO BOOKING BUTTON
@@ -1075,7 +1101,7 @@ public class MainFrame extends JFrame {
                     radius, radius);
 
             g2.setColor(pressed ? PRIMARY_DARK
-                    : hovered ? new Color(96, 233, 207) : PRIMARY);
+                    : hovered ? new Color(112, 237, 203) : PRIMARY);
             g2.fillRoundRect(insetX, insetY, width, height,
                     radius, radius);
 
@@ -1096,85 +1122,154 @@ public class MainFrame extends JFrame {
     // ============================================================
 
     private static class NavButton extends JButton {
-
         private boolean active;
         private boolean hovered;
 
-        NavButton(String text) {
+        NavButton(String text, String iconName) {
             super(text);
-
-            // Chu can giua, to va dam ngay ca khi chua hover.
-            setHorizontalAlignment(SwingConstants.CENTER);
-            setFont(AppFonts.bold(16f));
-            setForeground(new Color(218, 238, 234));
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
-            setPreferredSize(new Dimension(210, 52));
-            setMinimumSize(new Dimension(0, 52));
-            setBorder(new EmptyBorder(0, 8, 0, 8));
-
+            setIcon(new MenuIcon(iconName));
+            setIconTextGap(13);
+            setHorizontalAlignment(SwingConstants.LEFT);
+            setHorizontalTextPosition(SwingConstants.RIGHT);
+            setFont(AppFonts.bold(15f));
+            setForeground(new Color(224, 242, 237));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 47));
+            setPreferredSize(new Dimension(240, 47));
+            setMinimumSize(new Dimension(0, 47));
+            setBorder(new EmptyBorder(0, 13, 0, 6));
             setFocusPainted(false);
             setBorderPainted(false);
             setContentAreaFilled(false);
             setOpaque(false);
-            setRolloverEnabled(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
             addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseEntered(MouseEvent e) {
+                @Override public void mouseEntered(MouseEvent e) {
                     hovered = true;
                     refreshAppearance();
                 }
-
-                @Override
-                public void mouseExited(MouseEvent e) {
+                @Override public void mouseExited(MouseEvent e) {
                     hovered = false;
                     refreshAppearance();
                 }
             });
         }
 
-        void setActive(boolean active) {
-            this.active = active;
+        void setActive(boolean value) {
+            active = value;
             refreshAppearance();
         }
 
         private void refreshAppearance() {
-            if (active) {
-                setFont(AppFonts.bold(hovered ? 18f : 16.5f));
-                setForeground(SIDEBAR_DARK);
-            } else if (hovered) {
-                setFont(AppFonts.bold(18f));
-                setForeground(SIDEBAR_DARK);
-            } else {
-                setFont(AppFonts.bold(16f));
-                setForeground(new Color(218, 238, 234));
-            }
+            setFont(AppFonts.bold(hovered ? 15.7f : 15f));
+            setForeground(active || hovered ? SIDEBAR_DARK
+                    : new Color(224, 242, 237));
             repaint();
         }
 
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-                    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-
+        @Override protected void paintComponent(Graphics g) {
             if (active || hovered) {
-                // Vien bo tron giup menu noi bat khi tro chuot vao.
-                g2.setColor(hovered ? new Color(94, 231, 204) : PRIMARY);
-                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
-                g2.setColor(active ? new Color(137, 243, 223)
-                        : new Color(165, 255, 236));
-                g2.drawRoundRect(0, 0, getWidth() - 2, getHeight() - 2, 16, 16);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(hovered ? new Color(112, 237, 203) : PRIMARY);
+                int inset = hovered ? 3 : 1;
+                g2.fillRoundRect(inset, 1, getWidth() - inset * 2,
+                        getHeight() - 2, 14, 14);
+                g2.dispose();
             }
-
-            g2.dispose();
             super.paintComponent(g);
         }
     }
 
+    // Small vector icons avoid dependency on platform fonts and extra libraries.
+    private static class MenuIcon implements Icon {
+        private final String type;
+        MenuIcon(String type) { this.type = type; }
+        @Override public int getIconWidth() { return 19; }
+        @Override public int getIconHeight() { return 19; }
+
+        @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D p = (Graphics2D) g.create();
+            p.translate(x, y);
+            p.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+            p.setColor(c.getForeground());
+            p.setStroke(new BasicStroke(1.65f, BasicStroke.CAP_ROUND,
+                    BasicStroke.JOIN_ROUND));
+            switch (type) {
+                case "overview" -> {
+                    p.drawRoundRect(2, 2, 6, 6, 1, 1);
+                    p.drawRoundRect(11, 2, 6, 6, 1, 1);
+                    p.drawRoundRect(2, 11, 6, 6, 1, 1);
+                    p.drawRoundRect(11, 11, 6, 6, 1, 1);
+                }
+                case "list" -> {
+                    p.drawRoundRect(2, 2, 15, 15, 3, 3);
+                    for (int y0 : new int[]{6, 10, 14}) {
+                        p.fillOval(5, y0 - 1, 2, 2);
+                        p.drawLine(9, y0, 14, y0);
+                    }
+                }
+                case "booking" -> {
+                    p.drawRoundRect(2, 4, 15, 13, 2, 2);
+                    p.drawLine(2, 8, 17, 8);
+                    p.drawLine(6, 2, 6, 6);
+                    p.drawLine(13, 2, 13, 6);
+                    p.drawLine(6, 12, 9, 15);
+                    p.drawLine(9, 15, 14, 10);
+                }
+                case "calendar" -> {
+                    p.drawRoundRect(2, 4, 15, 13, 2, 2);
+                    p.drawLine(2, 8, 17, 8);
+                    p.drawLine(6, 2, 6, 6);
+                    p.drawLine(13, 2, 13, 6);
+                    for (int x0 : new int[]{6, 10, 14}) {
+                        p.fillOval(x0 - 1, 10, 2, 2);
+                        p.fillOval(x0 - 1, 14, 2, 2);
+                    }
+                }
+                case "explore" -> {
+                    p.drawOval(2, 2, 15, 15);
+                    p.drawLine(6, 13, 12, 6);
+                    p.drawLine(12, 6, 10, 12);
+                    p.drawLine(10, 12, 6, 13);
+                }
+                case "payment" -> {
+                    p.drawRoundRect(2, 5, 15, 11, 2, 2);
+                    p.drawLine(2, 8, 17, 8);
+                    p.drawRoundRect(11, 10, 6, 4, 2, 2);
+                }
+                case "court" -> {
+                    p.drawRoundRect(2, 4, 15, 13, 2, 2);
+                    p.drawLine(4, 4, 9, 2);
+                    p.drawLine(9, 2, 15, 4);
+                    for (int y0 : new int[]{8, 11, 14}) p.drawLine(6, y0, 14, y0);
+                }
+                case "users" -> {
+                    p.drawOval(4, 3, 5, 5);
+                    p.drawOval(12, 5, 4, 4);
+                    p.drawArc(2, 9, 10, 8, 0, 180);
+                    p.drawArc(10, 10, 7, 7, 0, 180);
+                }
+                case "stats" -> {
+                    p.drawLine(2, 17, 17, 17);
+                    p.drawRect(4, 11, 2, 6);
+                    p.drawRect(9, 7, 2, 10);
+                    p.drawRect(14, 3, 2, 14);
+                }
+                case "logout" -> {
+                    p.drawLine(11, 3, 4, 3);
+                    p.drawLine(4, 3, 4, 16);
+                    p.drawLine(4, 16, 11, 16);
+                    p.drawLine(9, 9, 17, 9);
+                    p.drawLine(14, 6, 17, 9);
+                    p.drawLine(14, 12, 17, 9);
+                }
+                default -> p.drawOval(3, 3, 12, 12);
+            }
+            p.dispose();
+        }
+    }
 
     // ============================================================
     // ROUNDED PANEL
@@ -1293,18 +1388,10 @@ public class MainFrame extends JFrame {
                     protected void configureScrollBarColors() {
 
                         thumbColor =
-                                new Color(
-                                        47,
-                                        201,
-                                        174
-                                );
+                                PRIMARY;
 
                         trackColor =
-                                new Color(
-                                        236,
-                                        244,
-                                        242
-                                );
+                                CONTENT_BG;
                     }
 
                     @Override
@@ -1359,11 +1446,7 @@ public class MainFrame extends JFrame {
                         );
 
                         g2.setColor(
-                                new Color(
-                                        47,
-                                        201,
-                                        174
-                                )
+                                PRIMARY
                         );
 
                         g2.fillRoundRect(
@@ -1389,11 +1472,7 @@ public class MainFrame extends JFrame {
                                 (Graphics2D) g.create();
 
                         g2.setColor(
-                                new Color(
-                                        243,
-                                        248,
-                                        247
-                                )
+                                CONTENT_BG
                         );
 
                         g2.fillRect(
@@ -1408,202 +1487,67 @@ public class MainFrame extends JFrame {
                 }
         );
     }
-    private static class HeroPanel
-        extends JPanel {
-
+    private static class HeroPanel extends JPanel {
+        // Image resource remains optional; a light texture can be drawn below
+        // the glow, but the banner palette always matches AuthView.
         private final Image backgroundImage;
 
         HeroPanel(String imagePath) {
-
             setOpaque(false);
-
-            java.net.URL url =
-                    MainFrame.class.getResource(
-                            imagePath
-                    );
-
-            if (url != null) {
-
-                backgroundImage =
-                        new ImageIcon(url)
-                                .getImage();
-
-            } else {
-
-                backgroundImage = null;
-            }
+            java.net.URL url = MainFrame.class.getResource(imagePath);
+            backgroundImage = url == null ? null : new ImageIcon(url).getImage();
         }
 
-
-        @Override
-        protected void paintComponent(
-                Graphics g
-        ) {
-
+        @Override protected void paintComponent(Graphics g) {
             super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                    RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
-            Graphics2D g2 =
-                    (Graphics2D) g.create();
-
-            g2.setRenderingHint(
-                    RenderingHints.KEY_INTERPOLATION,
-                    RenderingHints.VALUE_INTERPOLATION_BILINEAR
-            );
-
-
-            // =========================
-            // BACKGROUND IMAGE
-            // =========================
-
-            if (backgroundImage != null) {
-
-                int panelWidth =
-                        getWidth();
-
-                int panelHeight =
-                        getHeight();
-
-                double imageRatio =
-                        (double) backgroundImage.getWidth(null)
-                        / backgroundImage.getHeight(null);
-
-                double panelRatio =
-                        (double) panelWidth
-                        / panelHeight;
-
-
-                int drawWidth;
-                int drawHeight;
-                int x;
-                int y;
-
-
-                if (panelRatio > imageRatio) {
-
-                    drawWidth =
-                            panelWidth;
-
-                    drawHeight =
-                            (int) (
-                                    panelWidth
-                                    / imageRatio
-                            );
-
-                    x = 0;
-
-                    y =
-                            (
-                                    panelHeight
-                                    - drawHeight
-                            )
-                            / 2;
-
-                } else {
-
-                    drawHeight =
-                            panelHeight;
-
-                    drawWidth =
-                            (int) (
-                                    panelHeight
-                                    * imageRatio
-                            );
-
-                    y = 0;
-
-                    x =
-                            (
-                                    panelWidth
-                                    - drawWidth
-                            )
-                            / 2;
-                }
-
-
-                g2.drawImage(
-                        backgroundImage,
-                        x,
-                        y,
-                        drawWidth,
-                        drawHeight,
-                        this
-                );
-
-            } else {
-
-                // Nếu chưa add ảnh thì vẫn có nền xanh
-                g2.setColor(
-                        new Color(
-                                9,
-                                73,
-                                65
-                        )
-                );
-
-                g2.fillRect(
-                        0,
-                        0,
-                        getWidth(),
-                        getHeight()
-                );
+            int w = getWidth(), h = getHeight();
+            if (w <= 0 || h <= 0) {
+                g2.dispose();
+                return;
             }
 
+            // Exact gradient endpoints from the splash/login screen.
+            g2.setPaint(new GradientPaint(0, 0, SPLASH_START,
+                    w, h, SPLASH_END));
+            g2.fillRect(0, 0, w, h);
 
-            // =========================
-            // DARK GREEN OVERLAY
-            // =========================
+            // Keep the existing banner image as a barely visible texture.
+            if (backgroundImage != null && backgroundImage.getWidth(this) > 0
+                    && backgroundImage.getHeight(this) > 0) {
+                double scale = Math.max((double) w / backgroundImage.getWidth(this),
+                        (double) h / backgroundImage.getHeight(this));
+                int dw = (int) Math.ceil(backgroundImage.getWidth(this) * scale);
+                int dh = (int) Math.ceil(backgroundImage.getHeight(this) * scale);
+                g2.setComposite(AlphaComposite.getInstance(
+                        AlphaComposite.SRC_OVER, 0.08f));
+                g2.drawImage(backgroundImage, (w - dw) / 2,
+                        (h - dh) / 2, dw, dh, this);
+                g2.setComposite(AlphaComposite.SrcOver);
+            }
 
-            g2.setColor(
-                    new Color(
-                            3,
-                            45,
-                            40,
-                            145
-                    )
-            );
+            // Soft radial light at the center, as in AuthView.
+            g2.setPaint(new RadialGradientPaint(
+                    new Point(w / 2, h / 3), Math.max(320, w / 3),
+                    new float[]{0f, 1f},
+                    new Color[]{new Color(78, 216, 190, 90),
+                            new Color(78, 216, 190, 0)}));
+            g2.fillRect(0, 0, w, h);
 
-            g2.fillRect(
-                    0,
-                    0,
-                    getWidth(),
-                    getHeight()
-            );
+            // The same delicate court arcs as on the initial welcome screen.
+            g2.setColor(new Color(217, 255, 243, 33));
+            g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND,
+                    BasicStroke.JOIN_ROUND));
+            g2.drawArc(-210, 20, 660, 570, 18, 110);
+            g2.drawArc(w - 500, -150, 660, 570, 65, 110);
 
-
-            // =========================
-            // SUBTLE GREEN GRADIENT
-            // =========================
-
-            GradientPaint gradient =
-                    new GradientPaint(
-                            0,
-                            0,
-                            new Color(
-                                    10,
-                                    107,
-                                    92,
-                                    70
-                            ),
-                            getWidth(),
-                            getHeight(),
-                            new Color(
-                                    0,
-                                    25,
-                                    22,
-                                    80
-                            )
-                    );
-
-            g2.setPaint(gradient);
-
-            g2.fillRect(
-                    0,
-                    0,
-                    getWidth(),
-                    getHeight()
-            );
-
-
+            g2.setColor(new Color(146, 243, 212, 16));
+            g2.fillOval(-110, h - 105, w + 220, 240);
             g2.dispose();
         }
     }
