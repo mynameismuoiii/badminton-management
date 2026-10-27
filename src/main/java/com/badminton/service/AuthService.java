@@ -25,24 +25,26 @@ public class AuthService {
     ) throws SQLException {
 
         // Kiem tra ho ten
+        // Cho phep tieng Viet, emoji, ky tu dac biet
         if (fullName == null
                 || fullName.isBlank()
-                || fullName.length() > 120) {
+                || fullName.codePointCount(0, fullName.length()) > 120) {
 
             throw new IllegalArgumentException(
-                "Họ tên phải có từ 1 đến 120 ký tự."
+                "Họ tên không được để trống "
+                + "và tối đa 120 ký tự."
             );
         }
 
         // Kiem tra ten dang nhap
+        // Cho phep tat ca cac loai ky tu
         if (username == null
-                || !username.matches(
-                    "[A-Za-z0-9._-]{3,80}"
-                )) {
+                || username.isBlank()
+                || username.codePointCount(0, username.length()) > 80) {
 
             throw new IllegalArgumentException(
-                "Tên đăng nhập gồm 3-80 ký tự "
-                + "(chữ, số, dấu . _ -)."
+                "Tên đăng nhập không được để trống "
+                + "và tối đa 80 ký tự."
             );
         }
 
@@ -70,10 +72,10 @@ public class AuthService {
                 PasswordUtil.hash(password);
 
         try {
-            // UserDAO tu dong luu 2 bang
-            // users va customers trong transaction
+            // UserDAO luu 2 bang users va customers
+            // trong cung mot transaction
             return userDAO.createCustomerAccount(
-                fullName.strip(),
+                fullName,
                 username,
                 phone,
                 passwordHash
@@ -111,10 +113,10 @@ public class AuthService {
             return Optional.empty();
         }
 
-        // Tim user trong MySQL
+        // Tim tai khoan trong MySQL
         return userDAO.findByUsername(username)
 
-            // So sanh voi mat khau da bam
+            // So sanh mat khau voi hash da luu
             .filter(user ->
                 PasswordUtil.verify(
                     password,

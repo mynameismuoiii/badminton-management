@@ -115,7 +115,7 @@ public class RegisterPanel extends JPanel {
             new Dimension(Integer.MAX_VALUE, 49)
         );
 
-        // Goi dang ky that thay vi validateDemo()
+        // Goi ham dang ky
         submit.addActionListener(
             e -> registerAccount(
                 submit,
@@ -159,7 +159,7 @@ public class RegisterPanel extends JPanel {
 
         try {
 
-            // 1. Kiem tra rong
+            // 1. Kiem tra thong tin trong
             if (name.isBlank()
                     || account.isBlank()
                     || mobile.isBlank()
@@ -172,14 +172,13 @@ public class RegisterPanel extends JPanel {
                 return;
             }
 
-            // 2. Kiem tra ten dang nhap
-            if (!account.matches(
-                    "[A-Za-z0-9._-]{3,80}"
-                )) {
+            // 2. Cho phep moi loai ky tu
+            // Chi kiem tra do dai username
+            if (account.codePointCount(
+                    0, account.length()) > 80) {
 
                 alert(
-                    "Tên đăng nhập gồm 3-80 ký tự: "
-                    + "chữ, số, dấu . _ -"
+                    "Tên đăng nhập tối đa 80 ký tự."
                 );
 
                 return;
@@ -196,20 +195,30 @@ public class RegisterPanel extends JPanel {
                 return;
             }
 
-            // 4. Kiem tra do dai
-            if (name.length() > 120
-                    || pass.length < 8
-                    || pass.length > 128) {
+            // 4. Kiem tra do dai ho ten
+            // Khong gioi han loai ky tu
+            if (name.codePointCount(
+                    0, name.length()) > 120) {
 
                 alert(
-                    "Họ tên tối đa 120 ký tự; "
-                    + "mật khẩu từ 8 đến 128 ký tự."
+                    "Họ và tên tối đa 120 ký tự."
                 );
 
                 return;
             }
 
-            // 5. Xac nhan mat khau
+            // 5. Kiem tra do dai mat khau
+            if (pass.length < 8
+                    || pass.length > 128) {
+
+                alert(
+                    "Mật khẩu phải dài 8-128 ký tự."
+                );
+
+                return;
+            }
+
+            // 6. Xac nhan mat khau
             if (!Arrays.equals(pass, confirm)) {
 
                 alert(
@@ -219,10 +228,10 @@ public class RegisterPanel extends JPanel {
                 return;
             }
 
-            // 6. Khoa nut trong khi luu MySQL
+            // 7. Khoa nut khi luu MySQL
             submit.setEnabled(false);
 
-            // Chay tren worker de khong treo Swing
+            // Chay ngam de khong treo Swing
             new SwingWorker<Long, Void>() {
 
                 @Override
@@ -250,7 +259,7 @@ public class RegisterPanel extends JPanel {
 
                     try {
 
-                        // Lay ket qua tu background
+                        // Lay ket qua dang ky
                         get();
 
                         password.setText("");
@@ -261,7 +270,7 @@ public class RegisterPanel extends JPanel {
                             + "Hãy đăng nhập."
                         );
 
-                        // Chuyen sang man hinh dang nhap
+                        // Chuyen sang dang nhap
                         onLogin.run();
 
                     } catch (InterruptedException ex) {
@@ -326,7 +335,7 @@ public class RegisterPanel extends JPanel {
             // Xoa mang mat khau xac nhan
             Arrays.fill(confirm, '\0');
 
-            // Truong hop validation that bai
+            // Xoa mat khau neu validate that bai
             if (submit.isEnabled()) {
                 Arrays.fill(pass, '\0');
             }
