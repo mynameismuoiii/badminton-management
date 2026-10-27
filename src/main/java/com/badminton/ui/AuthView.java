@@ -1,3 +1,4 @@
+
 package com.badminton.ui;
 
 import com.badminton.util.AppFonts;
@@ -222,22 +223,73 @@ public class AuthView extends JPanel {
             64
         );
 
-        // Kich thuoc form
-        int cardW = Math.min(
-            480,
-            Math.max(420, w / 2 - 68)
-        );
+        // Dat logo va form thanh MOT CUM can giua.
+        // Khong tach xa khi maximize.
+        int cardW = getFormWidth();
+        int cardH = page == Page.REGISTER ? 610 : 465;
 
-        int cardH = page == Page.REGISTER
-            ? 610
-            : 465;
+        int cardX = getAuthLeftX()
+            + getBrandColumnWidth()
+            + AUTH_GAP;
 
         formCard.setBounds(
-            w - cardW - 58,
+            cardX,
             Math.max(25, (h - cardH) / 2),
             cardW,
             cardH
         );
+    }
+
+    // Khoang cach giua hai cot
+    private static final int AUTH_GAP = 28;
+
+    // Chieu rong cot logo
+    private static final int BRAND_COLUMN_WIDTH = 340;
+
+    // Khoang cach toi thieu voi hai canh
+    private static final int AUTH_SIDE_PADDING = 24;
+
+    private int getFormWidth() {
+
+        return Math.min(
+            480,
+            Math.max(420, getWidth() / 2 - 68)
+        );
+    }
+
+    private int getBrandColumnWidth() {
+
+        int available = getWidth()
+            - 2 * AUTH_SIDE_PADDING
+            - getFormWidth()
+            - AUTH_GAP;
+
+        return Math.max(
+            245,
+            Math.min(BRAND_COLUMN_WIDTH, available)
+        );
+    }
+
+    private int getAuthLeftX() {
+
+        int groupW = getBrandColumnWidth()
+            + AUTH_GAP
+            + getFormWidth();
+
+        return Math.max(
+            12,
+            (getWidth() - groupW) / 2
+        );
+    }
+
+    private int getBrandCenterX() {
+
+        if (page == Page.SPLASH || page == Page.WELCOME) {
+            return getWidth() / 2;
+        }
+
+        return getAuthLeftX()
+            + getBrandColumnWidth() / 2;
     }
 
     // =========================
@@ -262,11 +314,9 @@ public class AuthView extends JPanel {
         );
 
         drawBackground(g2);
-
         drawBrand(g2);
 
-        // Chi hien 3 cham trong luc SPLASH dang loading.
-        // Sang WELCOME, 3 cham bien mat va nhan cho 2 nut.
+        // Chi hien loading khi SPLASH
         if (page == Page.SPLASH) {
             drawDots(g2);
         }
@@ -367,13 +417,12 @@ public class AuthView extends JPanel {
             page == Page.SPLASH
             || page == Page.WELCOME;
 
-        int w = getWidth();
         int h = getHeight();
 
-        // Khi hien form, day logo sang ben trai
-        int cx = centered
-            ? w / 2
-            : Math.round(w * .265f);
+        // Khi hien form:
+        // Logo can giua trong cot ben trai.
+        // Hai phan di chuyen cung nhau.
+        int cx = getBrandCenterX();
 
         int size = centered ? 126 : 116;
 
@@ -451,17 +500,22 @@ public class AuthView extends JPanel {
             logoY + 94
         );
 
-        // Ten app
+        // =========================
+        // TEN TH-MINTON
+        // =========================
+
         String title = "TH - MINTON";
 
+        // Giu nguyen font Fredoka
         g.setFont(
             AppFonts.fredoka(centered ? 56f : 43f)
         );
 
         g.setColor(Color.WHITE);
 
-        int titleY =
-            logoY + size + (centered ? 91 : 86);
+        int titleY = logoY
+            + size
+            + (centered ? 91 : 86);
 
         g.drawString(
             title,
@@ -469,10 +523,14 @@ public class AuthView extends JPanel {
             titleY
         );
 
-        // Slogan
+        // =========================
+        // SLOGAN
+        // =========================
+
         String slogan =
             "Your Court. Your Game. Your Moment.";
 
+        // Merriweather (tu AppFonts)
         g.setFont(
             AppFonts.regular(centered ? 19f : 16f)
         );
@@ -501,7 +559,11 @@ public class AuthView extends JPanel {
             getHeight() / 2 - 232
         );
 
-        return logoY + 126 + 91 + 41 + 49;
+        return logoY
+            + 126
+            + 91
+            + 41
+            + 49;
     }
 
     private void drawDots(Graphics2D g) {

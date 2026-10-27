@@ -1,3 +1,4 @@
+
 package com.badminton.ui;
 
 import com.badminton.model.User;
@@ -182,14 +183,19 @@ public class LoginPanel extends JPanel {
 
                     password.setText("");
 
-                    // Tu choi vai tro chua duoc cap quyen.
+                    // Chi cho phep ADMIN / CUSTOMER
                     if (!"ADMIN".equalsIgnoreCase(user.role())
                             && !"CUSTOMER".equalsIgnoreCase(user.role())) {
-                        alert("Tài khoản chưa được cấp quyền truy cập ứng dụng.");
+
+                        alert(
+                            "Tài khoản chưa được cấp quyền "
+                            + "truy cập ứng dụng."
+                        );
+
                         return;
                     }
 
-                    // Giao dien theme va chuc nang theo user dang nhap.
+                    // Giao dien va chuc nang theo quyen
                     MainFrame mainFrame =
                             new MainFrame(user);
 
@@ -258,7 +264,7 @@ public class LoginPanel extends JPanel {
     }
 
     // ====================================
-    // CAC COMPONENT GIAO DIEN CO SAN
+    // CAC COMPONENT GIAO DIEN
     // ====================================
 
     static JLabel title(
@@ -359,7 +365,9 @@ public class LoginPanel extends JPanel {
         );
 
         button.setOpaque(false);
+
         button.setContentAreaFilled(false);
+
         button.setFocusPainted(false);
 
         button.setBorder(
@@ -382,7 +390,7 @@ public class LoginPanel extends JPanel {
 
 
 // =========================================
-// VE BACKGROUND VA VIEN CAC O NHAP
+// VE NEN VA VIEN O NHAP
 // =========================================
 
 final class MintInputPainter {
@@ -460,7 +468,7 @@ final class MintInputPainter {
 
 
 // =========================================
-// O NHAP VAN BAN
+// O NHAP TEN DANG NHAP
 // =========================================
 
 class MintTextField extends JTextField {
@@ -469,6 +477,7 @@ class MintTextField extends JTextField {
 
         setOpaque(false);
 
+        // Font Merriweather
         setFont(
             AppFonts.regular(15f)
         );
@@ -483,9 +492,12 @@ class MintTextField extends JTextField {
             new Color(38, 159, 151)
         );
 
+        // Giam padding doc tu 10px xuong 4px
+        // Tao them khong gian cho ky tu nhu "_"
+        // va phan duoi cua font Merriweather.
         setBorder(
             new EmptyBorder(
-                10, 16, 10, 16
+                4, 16, 4, 16
             )
         );
 
@@ -496,6 +508,7 @@ class MintTextField extends JTextField {
                 public void focusGained(
                     java.awt.event.FocusEvent e
                 ) {
+
                     repaint();
                 }
 
@@ -503,6 +516,7 @@ class MintTextField extends JTextField {
                 public void focusLost(
                     java.awt.event.FocusEvent e
                 ) {
+
                     repaint();
                 }
             }
@@ -544,6 +558,7 @@ class MintPasswordField extends JPasswordField {
 
         setOpaque(false);
 
+        // Font Merriweather
         setFont(
             AppFonts.regular(15f)
         );
@@ -558,9 +573,11 @@ class MintPasswordField extends JPasswordField {
             new Color(38, 159, 151)
         );
 
+        // Giam padding doc de khong cat
+        // phan duoi cua chu va con tro.
         setBorder(
             new EmptyBorder(
-                10, 16, 10, 16
+                4, 16, 4, 16
             )
         );
 
@@ -571,6 +588,7 @@ class MintPasswordField extends JPasswordField {
                 public void focusGained(
                     java.awt.event.FocusEvent e
                 ) {
+
                     repaint();
                 }
 
@@ -578,6 +596,7 @@ class MintPasswordField extends JPasswordField {
                 public void focusLost(
                     java.awt.event.FocusEvent e
                 ) {
+
                     repaint();
                 }
             }

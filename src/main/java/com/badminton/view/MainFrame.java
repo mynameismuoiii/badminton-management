@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
 
     public MainFrame(User user) {
 
-        super("TH-MINTON");
+        super("TH - MINTON");
         this.currentUser = Objects.requireNonNull(user, "Login required");
         this.admin = "ADMIN".equalsIgnoreCase(user.role());
         if (!admin && !"CUSTOMER".equalsIgnoreCase(user.role())) {
@@ -191,129 +191,25 @@ public class MainFrame extends JFrame {
     // ============================================================
 
     private JPanel createSidebar() {
+        JPanel sidebar = new JPanel(new BorderLayout());
+        sidebar.setPreferredSize(new Dimension(250, 0));
+        sidebar.setBackground(SIDEBAR);
 
-        JPanel sidebar =
-                new JPanel(
-                        new BorderLayout()
-                );
-
-        sidebar.setPreferredSize(
-                new Dimension(235, 0)
-        );
-
-        sidebar.setBackground(
-                SIDEBAR
-        );
-
-
-        // ===== BRAND =====
-
-        JPanel brand =
-                new JPanel();
-
+        // Logo nam giua thanh menu; khong hien subtitle.
+        JPanel brand = new JPanel(new GridBagLayout());
         brand.setOpaque(false);
+        brand.setBorder(new EmptyBorder(30, 10, 22, 10));
 
-        brand.setLayout(
-                new BoxLayout(
-                        brand,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
-        brand.setBorder(
-                new EmptyBorder(
-                        30,
-                        25,
-                        25,
-                        20
-                )
-        );
-
-
-        JLabel logo =
-                new JLabel("TH-MINTON");
-
-        logo.setForeground(
-                Color.WHITE
-        );
-
-        logo.setFont(
-                AppFonts.fredoka(27f)
-        );
-
-        logo.setAlignmentX(
-                Component.LEFT_ALIGNMENT
-        );
-
-
-        JLabel subtitle =
-                new JLabel(
-                        "Your Court. Your Game."
-                );
-
-        subtitle.setForeground(
-                new Color(
-                        155,
-                        213,
-                        204
-                )
-        );
-
-        subtitle.setFont(
-                AppFonts.regular(11f)
-        );
-
-        subtitle.setAlignmentX(
-                Component.LEFT_ALIGNMENT
-        );
-
-
+        JLabel logo = new JLabel("TH - MINTON", SwingConstants.CENTER);
+        logo.setForeground(Color.WHITE);
+        logo.setFont(AppFonts.fredoka(27f));
         brand.add(logo);
-
-        brand.add(
-                Box.createRigidArea(
-                        new Dimension(
-                                0,
-                                4
-                        )
-                )
-        );
-
-        brand.add(subtitle);
-
-
-        sidebar.add(
-                brand,
-                BorderLayout.NORTH
-        );
-
-
-        // ===== MENU =====
+        sidebar.add(brand, BorderLayout.NORTH);
 
         menuPanel.setOpaque(false);
-
-        menuPanel.setLayout(
-                new BoxLayout(
-                        menuPanel,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
-        menuPanel.setBorder(
-                new EmptyBorder(
-                        10,
-                        14,
-                        20,
-                        14
-                )
-        );
-
-
-        sidebar.add(
-                menuPanel,
-                BorderLayout.CENTER
-        );
-
+        menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
+        menuPanel.setBorder(new EmptyBorder(12, 16, 20, 16));
+        sidebar.add(menuPanel, BorderLayout.CENTER);
         return sidebar;
     }
 
@@ -470,7 +366,7 @@ public class MainFrame extends JFrame {
                 Box.createRigidArea(
                         new Dimension(
                                 0,
-                                6
+                                8
                         )
                 )
         );
@@ -620,7 +516,7 @@ public class MainFrame extends JFrame {
 
         JLabel smallTitle =
                 new JLabel(
-                        "WELCOME TO TH-MINTON"
+                        "WELCOME TO TH - MINTON"
                 );
 
         smallTitle.setAlignmentX(
@@ -635,8 +531,9 @@ public class MainFrame extends JFrame {
                 )
         );
 
+        // Bold that remains visible even with variable font files.
         smallTitle.setFont(
-                AppFonts.medium(13f)
+                AppFonts.bold(22f).deriveFont(Font.BOLD, 22f)
         );
 
 
@@ -695,54 +592,10 @@ public class MainFrame extends JFrame {
         );
 
 
-        JButton bookingButton =
-                new JButton(
-                        "Đặt sân ngay"
-                );
-
-        bookingButton.setAlignmentX(
-                Component.CENTER_ALIGNMENT
-        );
-
-        bookingButton.setFont(
-                AppFonts.medium(13f)
-        );
-
-        bookingButton.setForeground(
-                SIDEBAR_DARK
-        );
-
-        bookingButton.setBackground(
-                PRIMARY
-        );
-
-        bookingButton.setFocusPainted(false);
-        bookingButton.setBorderPainted(false);
-
-        bookingButton.setCursor(
-                Cursor.getPredefinedCursor(
-                        Cursor.HAND_CURSOR
-                )
-        );
-
-        bookingButton.setPreferredSize(
-                new Dimension(
-                        145,
-                        42
-                )
-        );
-
-        bookingButton.setMaximumSize(
-                new Dimension(
-                        145,
-                        42
-                )
-        );
-
-        bookingButton.addActionListener(
-                e -> showScreen("Đặt sân")
-        );
-
+        // Button with rounded corners and a gentle inset hover effect.
+        JButton bookingButton = new HeroBookingButton("Đặt sân ngay");
+        bookingButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        bookingButton.addActionListener(e -> showScreen("Đặt sân"));
 
         heroContent.add(smallTitle);
 
@@ -867,7 +720,7 @@ public class MainFrame extends JFrame {
         JLabel aboutDescription =
                 new JLabel(
                         "<html>"
-                        + "TH-MINTON giúp quản lý sân, khách hàng, "
+                        + "TH - MINTON giúp quản lý sân, khách hàng, "
                         + "lịch đặt và thanh toán trong cùng một hệ thống."
                         + "<br><br>"
                         + "Theo dõi trạng thái sân nhanh chóng và "
@@ -950,7 +803,7 @@ public class MainFrame extends JFrame {
 
         JLabel serviceTitle =
                 new JLabel(
-                        "Khám phá TH-MINTON"
+                        "Khám phá TH - MINTON"
                 );
 
         serviceTitle.setFont(
@@ -1105,7 +958,7 @@ public class MainFrame extends JFrame {
         );
 
         logout.setFont(
-                AppFonts.medium(13f)
+                AppFonts.bold(14f)
         );
 
         logout.setForeground(
@@ -1142,7 +995,7 @@ public class MainFrame extends JFrame {
                                     .showConfirmDialog(
                                             this,
                                             "Bạn có muốn đăng xuất?",
-                                            "TH-MINTON",
+                                            "TH - MINTON",
                                             JOptionPane.YES_NO_OPTION
                                     );
 
@@ -1164,149 +1017,161 @@ public class MainFrame extends JFrame {
 
 
     // ============================================================
+    // HOME HERO BOOKING BUTTON
+    // ============================================================
+
+    private static class HeroBookingButton extends JButton {
+        private boolean hovered;
+
+        HeroBookingButton(String text) {
+            super(text);
+
+            setFont(AppFonts.bold(15f).deriveFont(Font.BOLD, 15f));
+            setForeground(SIDEBAR_DARK);
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setPreferredSize(new Dimension(174, 52));
+            setMaximumSize(new Dimension(174, 52));
+            setMinimumSize(new Dimension(174, 52));
+
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setOpaque(false);
+            setBorder(new EmptyBorder(0, 0, 0, 0));
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    hovered = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    hovered = false;
+                    repaint();
+                }
+            });
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // When the pointer enters, the shape moves inwards a little
+            // without moving the layout or changing the click target.
+            boolean pressed = getModel().isPressed();
+            int insetX = pressed ? 8 : hovered ? 6 : 2;
+            int insetY = pressed ? 7 : hovered ? 5 : 2;
+            int width = Math.max(1, getWidth() - insetX * 2);
+            int height = Math.max(1, getHeight() - insetY * 2 - 2);
+            int radius = hovered ? 26 : 20;
+
+            g2.setColor(new Color(0, 37, 31, hovered ? 36 : 54));
+            g2.fillRoundRect(insetX, insetY + 2, width, height,
+                    radius, radius);
+
+            g2.setColor(pressed ? PRIMARY_DARK
+                    : hovered ? new Color(96, 233, 207) : PRIMARY);
+            g2.fillRoundRect(insetX, insetY, width, height,
+                    radius, radius);
+
+            if (hovered) {
+                g2.setColor(new Color(183, 255, 239, 175));
+                g2.drawRoundRect(insetX, insetY, width - 1, height - 1,
+                        radius, radius);
+            }
+
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+
+    // ============================================================
     // NAV BUTTON
     // ============================================================
 
-    private static class NavButton
-            extends JButton {
+    private static class NavButton extends JButton {
 
         private boolean active;
+        private boolean hovered;
 
         NavButton(String text) {
-
             super(text);
 
-            setHorizontalAlignment(
-                    SwingConstants.LEFT
-            );
-
-            setFont(
-                    AppFonts.medium(13f)
-            );
-
-            setForeground(
-                    new Color(
-                            218,
-                            238,
-                            234
-                    )
-            );
-
-            setMaximumSize(
-                    new Dimension(
-                            Integer.MAX_VALUE,
-                            46
-                    )
-            );
-
-            setPreferredSize(
-                    new Dimension(
-                            200,
-                            46
-                    )
-            );
-
-            setBorder(
-                    new EmptyBorder(
-                            0,
-                            18,
-                            0,
-                            12
-                    )
-            );
+            // Chu can giua, to va dam ngay ca khi chua hover.
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setFont(AppFonts.bold(16f));
+            setForeground(new Color(218, 238, 234));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
+            setPreferredSize(new Dimension(210, 52));
+            setMinimumSize(new Dimension(0, 52));
+            setBorder(new EmptyBorder(0, 8, 0, 8));
 
             setFocusPainted(false);
             setBorderPainted(false);
             setContentAreaFilled(false);
             setOpaque(false);
+            setRolloverEnabled(false);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-            setCursor(
-                    Cursor.getPredefinedCursor(
-                            Cursor.HAND_CURSOR
-                    )
-            );
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    hovered = true;
+                    refreshAppearance();
+                }
 
-            addMouseListener(
-                    new MouseAdapter() {
-
-                        @Override
-                        public void mouseEntered(
-                                MouseEvent e
-                        ) {
-
-                            if (!active) {
-
-                                setForeground(
-                                        Color.WHITE
-                                );
-
-                                setBackground(
-                                        new Color(
-                                                18,
-                                                83,
-                                                75
-                                        )
-                                );
-
-                                setOpaque(true);
-                            }
-                        }
-
-                        @Override
-                        public void mouseExited(
-                                MouseEvent e
-                        ) {
-
-                            if (!active) {
-
-                                setForeground(
-                                        new Color(
-                                                218,
-                                                238,
-                                                234
-                                        )
-                                );
-
-                                setOpaque(false);
-                            }
-                        }
-                    }
-            );
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    hovered = false;
+                    refreshAppearance();
+                }
+            });
         }
 
-
-        void setActive(
-                boolean active
-        ) {
-
+        void setActive(boolean active) {
             this.active = active;
+            refreshAppearance();
+        }
 
+        private void refreshAppearance() {
             if (active) {
-
-                setOpaque(true);
-
-                setBackground(
-                        PRIMARY
-                );
-
-                setForeground(
-                        SIDEBAR_DARK
-                );
-
+                setFont(AppFonts.bold(hovered ? 18f : 16.5f));
+                setForeground(SIDEBAR_DARK);
+            } else if (hovered) {
+                setFont(AppFonts.bold(18f));
+                setForeground(SIDEBAR_DARK);
             } else {
+                setFont(AppFonts.bold(16f));
+                setForeground(new Color(218, 238, 234));
+            }
+            repaint();
+        }
 
-                setOpaque(false);
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-                setForeground(
-                        new Color(
-                                218,
-                                238,
-                                234
-                        )
-                );
+            if (active || hovered) {
+                // Vien bo tron giup menu noi bat khi tro chuot vao.
+                g2.setColor(hovered ? new Color(94, 231, 204) : PRIMARY);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+                g2.setColor(active ? new Color(137, 243, 223)
+                        : new Color(165, 255, 236));
+                g2.drawRoundRect(0, 0, getWidth() - 2, getHeight() - 2, 16, 16);
             }
 
-            repaint();
+            g2.dispose();
+            super.paintComponent(g);
         }
     }
 

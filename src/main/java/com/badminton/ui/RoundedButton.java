@@ -27,7 +27,10 @@ public class RoundedButton extends JButton {
 
         this.primary = primary;
 
-        setFont(AppFonts.medium(18f));
+        // Merriweather dam, lon hon tren moi nut Dang nhap / Dang ky.
+        setFont(AppFonts.bold(21f));
+        setHorizontalAlignment(CENTER);
+        setVerticalAlignment(CENTER);
         setForeground(Color.WHITE);
 
         setBorderPainted(false);
@@ -158,24 +161,21 @@ public class RoundedButton extends JButton {
             32, 32
         );
 
-        // Ve text bang font Lexend
+        // Ve chu Merriweather dam o chinh giua nut
         g2.setFont(getFont());
         g2.setColor(getForeground());
 
         FontMetrics fm = g2.getFontMetrics();
 
-        int tx = (
-            getWidth() - fm.stringWidth(getText())
-        ) / 2;
-
-        int ty = (
-            getHeight() - fm.getHeight()
-        ) / 2 + fm.getAscent();
+        // Can giua text theo phan nen nut, khong lech khi hover.
+        int textX = p + Math.round((w - fm.stringWidth(getText())) / 2f);
+        int textY = p + Math.round((h - fm.getAscent() - fm.getDescent()) / 2f)
+                + fm.getAscent();
 
         g2.drawString(
             getText(),
-            tx,
-            ty
+            textX,
+            textY
         );
 
         g2.dispose();
