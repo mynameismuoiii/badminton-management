@@ -1,4 +1,3 @@
-
 package com.badminton.dao;
 
 import com.badminton.config.DatabaseConnection;
@@ -51,6 +50,38 @@ public class BookingDAO {
         );
     }
 
+    // N1: chi tra ve don cua khach dang dang nhap.
+    public List<Booking> findByCustomerId(long customerId)
+            throws SQLException {
+
+        List<Booking> result = new ArrayList<>();
+
+        String sql =
+            "SELECT " + COLS +
+            " FROM bookings WHERE customer_id = ? " +
+            "ORDER BY booking_date DESC, " +
+            "start_time DESC, id DESC";
+
+        try (
+            Connection conn =
+                DatabaseConnection.getConnection();
+
+            PreparedStatement ps =
+                conn.prepareStatement(sql)
+        ) {
+
+            ps.setLong(1, customerId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.add(map(rs));
+                }
+            }
+        }
+
+        return result;
+    }
+
     private List<Booking> list(
             String sql,
             LocalDate date,
@@ -62,18 +93,23 @@ public class BookingDAO {
         try (
             Connection conn =
                 DatabaseConnection.getConnection();
+
             PreparedStatement ps =
                 conn.prepareStatement(sql)
         ) {
+
             if (courtId != null) {
+
                 ps.setLong(1, courtId);
                 ps.setDate(2, Date.valueOf(date));
 
             } else if (date != null) {
+
                 ps.setDate(1, Date.valueOf(date));
             }
 
             try (ResultSet rs = ps.executeQuery()) {
+
                 while (rs.next()) {
                     result.add(map(rs));
                 }
@@ -93,9 +129,11 @@ public class BookingDAO {
         try (
             Connection conn =
                 DatabaseConnection.getConnection();
+
             PreparedStatement ps =
                 conn.prepareStatement(sql)
         ) {
+
             ps.setLong(1, id);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -121,17 +159,23 @@ public class BookingDAO {
             "start_time, end_time, status) " +
             "VALUES (?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn =
-                 DatabaseConnection.getConnection()) {
+        try (
+            Connection conn =
+                DatabaseConnection.getConnection()
+        ) {
 
             conn.setAutoCommit(false);
 
             try {
+
                 // Khoa san trong transaction
                 lockCourt(conn, booking.courtId());
 
-                if (!"CANCELLED".equals(booking.status())
-                        && overlaps(conn, booking, 0)) {
+                if (
+                    !"CANCELLED".equals(booking.status())
+                    && overlaps(conn, booking, 0)
+                ) {
+
                     throw new SQLException(
                         "Khung gio nay da co nguoi dat.",
                         "23000"
@@ -140,17 +184,21 @@ public class BookingDAO {
 
                 long id;
 
-                try (PreparedStatement ps =
-                         conn.prepareStatement(
-                             sql,
-                             Statement.RETURN_GENERATED_KEYS
-                         )) {
+                try (
+                    PreparedStatement ps =
+                        conn.prepareStatement(
+                            sql,
+                            Statement.RETURN_GENERATED_KEYS
+                        )
+                ) {
 
                     fill(ps, booking);
                     ps.executeUpdate();
 
-                    try (ResultSet keys =
-                             ps.getGeneratedKeys()) {
+                    try (
+                        ResultSet keys =
+                            ps.getGeneratedKeys()
+                    ) {
 
                         if (!keys.next()) {
                             throw new SQLException(
@@ -163,9 +211,11 @@ public class BookingDAO {
                 }
 
                 conn.commit();
+
                 return id;
 
             } catch (SQLException | RuntimeException ex) {
+
                 rollback(conn, ex);
                 throw ex;
             }
@@ -184,18 +234,23 @@ public class BookingDAO {
             "booking_date = ?, start_time = ?, " +
             "end_time = ?, status = ? WHERE id = ?";
 
-        try (Connection conn =
-                 DatabaseConnection.getConnection()) {
+        try (
+            Connection conn =
+                DatabaseConnection.getConnection()
+        ) {
 
             conn.setAutoCommit(false);
 
             try {
+
                 lockCourt(conn, booking.courtId());
 
-                if (!"CANCELLED".equals(booking.status())
-                        && overlaps(
-                            conn, booking, booking.id()
-                        )) {
+                if (
+                    !"CANCELLED".equals(booking.status())
+                    && overlaps(
+                        conn, booking, booking.id()
+                    )
+                ) {
 
                     throw new SQLException(
                         "Khung gio nay da co nguoi dat.",
@@ -205,8 +260,10 @@ public class BookingDAO {
 
                 int count;
 
-                try (PreparedStatement ps =
-                         conn.prepareStatement(sql)) {
+                try (
+                    PreparedStatement ps =
+                        conn.prepareStatement(sql)
+                ) {
 
                     fill(ps, booking);
                     ps.setLong(7, booking.id());
@@ -219,6 +276,7 @@ public class BookingDAO {
                 return count > 0;
 
             } catch (SQLException | RuntimeException ex) {
+
                 rollback(conn, ex);
                 throw ex;
             }
@@ -236,10 +294,13 @@ public class BookingDAO {
         try (
             Connection conn =
                 DatabaseConnection.getConnection();
+
             PreparedStatement ps =
                 conn.prepareStatement(sql)
         ) {
+
             ps.setLong(1, id);
+
             return ps.executeUpdate() > 0;
         }
     }
@@ -254,14 +315,17 @@ public class BookingDAO {
             "SELECT id FROM courts " +
             "WHERE id = ? AND active = TRUE FOR UPDATE";
 
-        try (PreparedStatement ps =
-                 conn.prepareStatement(sql)) {
+        try (
+            PreparedStatement ps =
+                conn.prepareStatement(sql)
+        ) {
 
             ps.setLong(1, courtId);
 
             try (ResultSet rs = ps.executeQuery()) {
 
                 if (!rs.next()) {
+
                     throw new SQLException(
                         "San khong ton tai " +
                         "hoac da ngung hoat dong."
@@ -288,13 +352,24 @@ public class BookingDAO {
             "AND end_time > ? " +
             "AND id <> ? LIMIT 1";
 
-        try (PreparedStatement ps =
-                 conn.prepareStatement(sql)) {
+        try (
+            PreparedStatement ps =
+                conn.prepareStatement(sql)
+        ) {
 
             ps.setLong(1, b.courtId());
-            ps.setDate(2, Date.valueOf(b.bookingDate()));
-            ps.setTime(3, Time.valueOf(b.endTime()));
-            ps.setTime(4, Time.valueOf(b.startTime()));
+            ps.setDate(
+                2,
+                Date.valueOf(b.bookingDate())
+            );
+            ps.setTime(
+                3,
+                Time.valueOf(b.endTime())
+            );
+            ps.setTime(
+                4,
+                Time.valueOf(b.startTime())
+            );
             ps.setLong(5, excludedId);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -305,20 +380,24 @@ public class BookingDAO {
 
     private static void validate(Booking b) {
 
-        if (b == null ||
+        if (
+            b == null ||
             b.bookingDate() == null ||
             b.startTime() == null ||
             b.endTime() == null ||
-            !b.startTime().isBefore(b.endTime())) {
+            !b.startTime().isBefore(b.endTime())
+        ) {
 
             throw new IllegalArgumentException(
                 "Ngay/gio dat san khong hop le."
             );
         }
 
-        if (!"PENDING".equals(b.status()) &&
+        if (
+            !"PENDING".equals(b.status()) &&
             !"CONFIRMED".equals(b.status()) &&
-            !"CANCELLED".equals(b.status())) {
+            !"CANCELLED".equals(b.status())
+        ) {
 
             throw new IllegalArgumentException(
                 "Trang thai booking khong hop le."
@@ -333,9 +412,18 @@ public class BookingDAO {
 
         ps.setLong(1, b.courtId());
         ps.setLong(2, b.customerId());
-        ps.setDate(3, Date.valueOf(b.bookingDate()));
-        ps.setTime(4, Time.valueOf(b.startTime()));
-        ps.setTime(5, Time.valueOf(b.endTime()));
+        ps.setDate(
+            3,
+            Date.valueOf(b.bookingDate())
+        );
+        ps.setTime(
+            4,
+            Time.valueOf(b.startTime())
+        );
+        ps.setTime(
+            5,
+            Time.valueOf(b.endTime())
+        );
         ps.setString(6, b.status());
     }
 
@@ -346,9 +434,12 @@ public class BookingDAO {
             rs.getLong("id"),
             rs.getLong("court_id"),
             rs.getLong("customer_id"),
-            rs.getDate("booking_date").toLocalDate(),
-            rs.getTime("start_time").toLocalTime(),
-            rs.getTime("end_time").toLocalTime(),
+            rs.getDate("booking_date")
+                .toLocalDate(),
+            rs.getTime("start_time")
+                .toLocalTime(),
+            rs.getTime("end_time")
+                .toLocalTime(),
             rs.getString("status")
         );
     }
@@ -357,9 +448,13 @@ public class BookingDAO {
             Connection conn,
             Exception original
     ) {
+
         try {
+
             conn.rollback();
+
         } catch (SQLException ex) {
+
             original.addSuppressed(ex);
         }
     }

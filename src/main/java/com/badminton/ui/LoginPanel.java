@@ -3,7 +3,7 @@ package com.badminton.ui;
 import com.badminton.model.User;
 import com.badminton.service.AuthService;
 import com.badminton.util.AppFonts;
-import com.badminton.view.MainFrame;
+import com.badminton.view.RoleBasedMainFrame;
 
 import java.awt.*;
 import java.sql.SQLException;
@@ -182,9 +182,17 @@ public class LoginPanel extends JPanel {
 
                     password.setText("");
 
-                    // Mo giao dien chinh
-                    MainFrame mainFrame =
-                            new MainFrame();
+                    // Chi cho ADMIN / CUSTOMER vao giao dien theo quyen.
+                    // Vai tro khac (vi du STAFF) phai duoc thong nhat sau.
+                    if (!"ADMIN".equalsIgnoreCase(user.role())
+                            && !"CUSTOMER".equalsIgnoreCase(user.role())) {
+                        alert("Tài khoản chưa được cấp quyền truy cập ứng dụng.");
+                        return;
+                    }
+
+                    // Mo giao dien phu hop voi vai tro da dang nhap.
+                    RoleBasedMainFrame mainFrame =
+                            new RoleBasedMainFrame(user);
 
                     mainFrame.setTitle(
                         "TH-MINTON - "
