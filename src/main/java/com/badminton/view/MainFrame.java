@@ -1,6 +1,7 @@
 package com.badminton.view;
 
 import com.badminton.ui.AuthFrame;
+import com.badminton.model.User;
 import com.badminton.util.AppFonts;
 
 import java.awt.*;
@@ -8,6 +9,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -63,11 +65,19 @@ public class MainFrame extends JFrame {
     private JLabel pageTitle;
 
     private String currentScreen;
+    private final User currentUser;
+    private final boolean admin;
+    private BookingPanel bookingPanel;
+    private PaymentPanel paymentPanel;
 
-
-    public MainFrame() {
+    public MainFrame(User user) {
 
         super("TH-MINTON");
+        this.currentUser = Objects.requireNonNull(user, "Login required");
+        this.admin = "ADMIN".equalsIgnoreCase(user.role());
+        if (!admin && !"CUSTOMER".equalsIgnoreCase(user.role())) {
+            throw new SecurityException("Vai trò chưa được hỗ trợ: " + user.role());
+        }
 
         setDefaultCloseOperation(
                 JFrame.EXIT_ON_CLOSE
@@ -135,71 +145,42 @@ public class MainFrame extends JFrame {
 
 
         // =========================
-        // SCREENS
+        // SCREENS: THEME shell + COMBINED business functions
         // =========================
 
-        registerScreen(
-                "Tổng quan",
-                createHomePanel()
-        );
+        paymentPanel = new PaymentPanel(currentUser);
+        bookingPanel = new BookingPanel(currentUser, bookingId -> {
+            paymentPanel.focusBooking(bookingId);
+            showScreen("Thanh toán");
+        });
 
-        registerScreen(
-                "Sân",
-                new CourtPanel()
-        );
+        registerScreen("Tổng quan", createHomePanel());
+        if (admin) {
+            // Admin co quyen quan ly san va khach hang.
+            registerScreen("Sân", new CourtPanel());
+            registerScreen("Khách hàng", new CustomerPanel());
+        } else {
+            // Customer chi xem san, va dat tren san da chon.
+            registerScreen("Sân", new CustomerCourtListPanel(courtId -> {
+                bookingPanel.selectCourt(courtId);
+                showScreen("Đặt sân");
+            }));
+        }
+        registerScreen("Đặt sân", bookingPanel);
+        registerScreen("Lịch sân", new SchedulePanel());
+        registerScreen("Gợi ý sân", new SuggestionPanel());
+        registerScreen("Thanh toán", paymentPanel);
+        if (admin) {
+            registerScreen("Thống kê", new StatisticsPanel());
+        }
 
-        registerScreen(
-                "Khách hàng",
-                new CustomerPanel()
-        );
+        // Chi hien menu cho cac man hinh duoc cap quyen.
+        for (String screenName : screens.keySet()) {
+            addMenuButton(screenName);
+        }
 
-        registerScreen(
-                "Đặt sân",
-                new BookingPanel()
-        );
-
-        registerScreen(
-                "Lịch sân",
-                new SchedulePanel()
-        );
-
-        registerScreen(
-                "Gợi ý sân",
-                new SuggestionPanel()
-        );
-
-        registerScreen(
-                "Thanh toán",
-                new PaymentPanel()
-        );
-
-        registerScreen(
-                "Thống kê",
-                new StatisticsPanel()
-        );
-
-
-        // =========================
-        // MENU
-        // =========================
-
-        addMenuButton("Tổng quan");
-        addMenuButton("Sân");
-        addMenuButton("Khách hàng");
-        addMenuButton("Đặt sân");
-        addMenuButton("Lịch sân");
-        addMenuButton("Gợi ý sân");
-        addMenuButton("Thanh toán");
-        addMenuButton("Thống kê");
-
-        menuPanel.add(
-                Box.createVerticalGlue()
-        );
-
-        menuPanel.add(
-                createLogoutButton()
-        );
-
+        menuPanel.add(Box.createVerticalGlue());
+        menuPanel.add(createLogoutButton());
 
         showScreen("Tổng quan");
     }
@@ -395,7 +376,8 @@ public class MainFrame extends JFrame {
 
         JLabel userLabel =
                 new JLabel(
-                        "TH-MINTON Member"
+                        currentUser.username() + " (" +
+                        (admin ? "Quản trị viên" : "Khách hàng") + ")"
                 );
 
         userLabel.setFont(
@@ -468,9 +450,14 @@ public class MainFrame extends JFrame {
         NavButton button =
                 new NavButton(name);
 
-        button.addActionListener(
-                e -> showScreen(name)
-        );
+        button.addActionListener(e -> {
+            if ("Đặt sân".equals(name)) {
+                bookingPanel.refreshData();
+            } else if ("Thanh toán".equals(name)) {
+                paymentPanel.refreshData();
+            }
+            showScreen(name);
+        });
 
         navButtons.put(
                 name,
