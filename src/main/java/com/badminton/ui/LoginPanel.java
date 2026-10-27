@@ -182,9 +182,16 @@ public class LoginPanel extends JPanel {
 
                     password.setText("");
 
-                    // Mo giao dien chinh
+                    // Tu choi vai tro chua duoc cap quyen.
+                    if (!"ADMIN".equalsIgnoreCase(user.role())
+                            && !"CUSTOMER".equalsIgnoreCase(user.role())) {
+                        alert("Tài khoản chưa được cấp quyền truy cập ứng dụng.");
+                        return;
+                    }
+
+                    // Giao dien theme va chuc nang theo user dang nhap.
                     MainFrame mainFrame =
-                            new MainFrame();
+                            new MainFrame(user);
 
                     mainFrame.setTitle(
                         "TH-MINTON - "
