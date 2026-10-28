@@ -56,7 +56,6 @@ public class MainFrame extends JFrame {
 
     private JLabel pageTitle;
 
-    private String currentScreen;
     private final User currentUser;
     private final boolean admin;
 
@@ -166,7 +165,7 @@ public class MainFrame extends JFrame {
         // QUẢN TRỊ HỆ THỐNG: register only for ADMIN.
         if (admin) {
             registerScreen("Quản lý sân", new CourtPanel());
-            registerScreen("Quản lý khách hàng", new CustomerPanel());
+            registerScreen("Quản lý khách hàng", new CustomerPanel(user));
             registerScreen("Thống kê & báo cáo", new StatisticsPanel());
         }
 
@@ -522,7 +521,6 @@ public class MainFrame extends JFrame {
             );
         }
 
-        currentScreen = name;
 
         cardLayout.show(
                 content,
@@ -1271,81 +1269,6 @@ public class MainFrame extends JFrame {
         }
     }
 
-    // ============================================================
-    // ROUNDED PANEL
-    // ============================================================
-
-    private static class RoundedPanel
-            extends JPanel {
-
-        private final int radius;
-        private final Color background;
-
-        RoundedPanel(
-                int radius,
-                Color background
-        ) {
-
-            this.radius = radius;
-            this.background = background;
-
-            setOpaque(false);
-        }
-
-
-        @Override
-        protected void paintComponent(
-                Graphics g
-        ) {
-
-            Graphics2D g2 =
-                    (Graphics2D) g.create();
-
-            g2.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON
-            );
-
-
-            // shadow
-            g2.setColor(
-                    new Color(
-                            0,
-                            40,
-                            33,
-                            18
-                    )
-            );
-
-            g2.fillRoundRect(
-                    3,
-                    5,
-                    getWidth() - 6,
-                    getHeight() - 6,
-                    radius,
-                    radius
-            );
-
-
-            // card
-            g2.setColor(
-                    background
-            );
-
-            g2.fillRoundRect(
-                    0,
-                    0,
-                    getWidth() - 6,
-                    getHeight() - 8,
-                    radius,
-                    radius
-            );
-
-            g2.dispose();
-
-            super.paintComponent(g);
-        }
-    }
     private JScrollPane createScrollPane(JPanel panel) {
 
     JScrollPane scrollPane =
