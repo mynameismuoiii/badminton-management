@@ -282,15 +282,32 @@ public final class CustomerCourtListPanel extends JPanel implements Scrollable {
     }
 
     private final class CourtCard extends RoundSurface {
+        @Override
+        protected void paintBorder(Graphics g) {
+            // Vien mong quanh ca the de anh va phan thong tin trong gon gang hon.
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setStroke(new BasicStroke(1f));
+            g2.setColor(new Color(217, 233, 227));
+            g2.drawRoundRect(0, 0, getWidth() - 2, getHeight() - 5, 24, 24);
+            g2.dispose();
+        }
+
         CourtCard(Court court) {
             super(Color.WHITE, 24);
             setLayout(new BorderLayout());
             setPreferredSize(new Dimension(250, 347));
             setBorder(new EmptyBorder(0, 0, 6, 0));
 
+            // Dat anh trong mot khung rieng, lui vao 12px so voi mep the.
+            // Nhu vay anh luon can deu va ca 4 goc duoc bo tron doc lap.
             CourtPhoto photo = new CourtPhoto(court.id());
             photo.setPreferredSize(new Dimension(250, 165));
-            add(photo, BorderLayout.NORTH);
+            JPanel photoFrame = new JPanel(new BorderLayout());
+            photoFrame.setOpaque(false);
+            photoFrame.setBorder(new EmptyBorder(12, 12, 0, 12));
+            photoFrame.add(photo, BorderLayout.CENTER);
+            add(photoFrame, BorderLayout.NORTH);
 
             JPanel info = new JPanel();
             info.setOpaque(false);
@@ -511,7 +528,13 @@ public final class CustomerCourtListPanel extends JPanel implements Scrollable {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             int w = getWidth(), h = getHeight();
             if (w < 2 || h < 2) { g2.dispose(); return; }
-            g2.setClip(new RoundRectangle2D.Float(0, 0, w, h + 18, 23, 23));
+            // Khung anh cat tron DEU bon goc (truoc day +18 lam 2 goc duoi vuong).
+            RoundRectangle2D.Float shape = new RoundRectangle2D.Float(0.75f, 0.75f,
+                    w - 1.5f, h - 1.5f, 18, 18);
+            Shape previousClip = g2.getClip();
+            g2.clip(shape);
+            g2.setColor(new Color(230, 243, 238));
+            g2.fill(shape);
             if (image != null) {
                 int iw = image.getWidth(null), ih = image.getHeight(null);
                 if (iw > 0 && ih > 0) {
@@ -545,7 +568,11 @@ public final class CustomerCourtListPanel extends JPanel implements Scrollable {
                 g2.setColor(new Color(235, 255, 248, 220));
                 g2.drawString("TH-MINTON  ·  COURT #" + courtId, 14, 21);
             }
-            g2.setClip(null);
+            g2.setClip(previousClip);
+            // Vien anh mau xanh xam nhat, khong che mat noi dung anh.
+            g2.setStroke(new BasicStroke(1.5f));
+            g2.setColor(new Color(199, 223, 215));
+            g2.draw(shape);
             g2.dispose();
         }
     }

@@ -1,5 +1,7 @@
 package com.badminton.view;
 
+import com.badminton.ui.MintDialogs;
+
 import com.badminton.dao.BookingDAO;
 import com.badminton.dao.CustomerDAO;
 import com.badminton.model.Booking;
@@ -15,6 +17,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
@@ -94,10 +97,10 @@ public class BookingPanel extends JPanel implements Scrollable {
     private final JLabel selectedDurationLabel = new JLabel("--");
     private final JLabel totalLabel = new JLabel("0 đ");
     private final JLabel historyCountLabel = new JLabel("Đơn đặt của bạn");
-    private final JComboBox<Customer> customerBox = new JComboBox<>();
-    private final JComboBox<String> durationBox = new JComboBox<>(
+    private final RoundedComboBox<Customer> customerBox = new RoundedComboBox<>();
+    private final RoundedComboBox<String> durationBox = new RoundedComboBox<>(
             new String[]{"60 phút", "30 phút"});
-    private final JSpinner dateSpinner = new JSpinner(new SpinnerDateModel());
+    private final RoundedDatePicker dateSpinner = new RoundedDatePicker();
     private final CourtPicture summaryPicture = new CourtPicture();
     private final PillButton bookButton = new PillButton("Đặt sân & thanh toán", true);
     private final PillButton refreshButton = new PillButton("Làm mới", false);
@@ -152,6 +155,8 @@ public class BookingPanel extends JPanel implements Scrollable {
         history.setPreferredSize(new Dimension(930, 290));
         history.setMaximumSize(new Dimension(Integer.MAX_VALUE, 290));
         page.add(history);
+        MintDropdown.install(customerBox);
+        MintDropdown.install(durationBox);
 
         dateSpinner.setValue(Date.from(selectedDate.atStartOfDay(
                 ZoneId.systemDefault()).toInstant()));
@@ -283,30 +288,41 @@ public class BookingPanel extends JPanel implements Scrollable {
         shell.setLayout(new BorderLayout(0, 10));
         shell.setBorder(new EmptyBorder(18, 15, 17, 15));
 
+        // Center the title AND the entire date navigator on the same axis.
+        // Previously the title was centered but the date row was left aligned.
         JPanel header = transparent();
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        header.add(label("2. Chọn thời gian", AppFonts.bold(15f), TEXT));
+        JLabel timeTitle = label("2. Chọn thời gian", AppFonts.bold(15f), TEXT);
+        timeTitle.setHorizontalAlignment(SwingConstants.CENTER);
+        timeTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        timeTitle.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        header.add(timeTitle);
         header.add(Box.createVerticalStrut(11));
 
-        JPanel dateRow = transparent(new BorderLayout(6, 0));
+        JPanel dateRow = transparent(new FlowLayout(FlowLayout.CENTER, 8, 0));
+        dateRow.setAlignmentX(Component.CENTER_ALIGNMENT);
+        dateRow.setPreferredSize(new Dimension(0, 42));
+        dateRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         JButton previous = dateArrow("‹");
         JButton next = dateArrow("›");
         previous.addActionListener(e -> shiftDate(-1));
         next.addActionListener(e -> shiftDate(1));
-        dateSpinner.setEditor(new JSpinner.DateEditor(dateSpinner, "dd/MM/yyyy"));
-        dateSpinner.setFont(AppFonts.medium(13f));
-        dateSpinner.setBorder(BorderFactory.createLineBorder(LINE));
-        dateRow.add(previous, BorderLayout.WEST);
-        dateRow.add(dateSpinner, BorderLayout.CENTER);
-        dateRow.add(next, BorderLayout.EAST);
+        dateSpinner.setPreferredSize(new Dimension(194, 40));
+        dateRow.add(previous);
+        dateRow.add(dateSpinner);
+        dateRow.add(next);
         header.add(dateRow);
-        header.add(Box.createVerticalStrut(10));
+        header.add(Box.createVerticalStrut(12));
 
-        JPanel intervalRow = transparent(new BorderLayout());
+        JPanel intervalRow = transparent(new BorderLayout(12, 0));
+        intervalRow.setAlignmentX(Component.CENTER_ALIGNMENT);
+        intervalRow.setPreferredSize(new Dimension(0, 38));
+        intervalRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         intervalRow.add(label("Chọn giờ trống bên dưới", AppFonts.regular(11f), MUTED),
                 BorderLayout.WEST);
-        durationBox.setFont(AppFonts.medium(11f));
-        durationBox.setPreferredSize(new Dimension(100, 29));
+        durationBox.setFont(AppFonts.medium(11.5f));
+        durationBox.setPreferredSize(new Dimension(126, 38));
+        durationBox.setMinimumSize(new Dimension(114, 38));
         intervalRow.add(durationBox, BorderLayout.EAST);
         header.add(intervalRow);
         shell.add(header, BorderLayout.NORTH);
@@ -353,12 +369,27 @@ public class BookingPanel extends JPanel implements Scrollable {
     }
 
     private JButton dateArrow(String symbol) {
-        JButton b = new JButton(symbol);
-        b.setPreferredSize(new Dimension(32, 33));
-        b.setFont(AppFonts.bold(19f));
-        b.setForeground(FOREST);
-        b.setBackground(PALE);
-        b.setBorder(BorderFactory.createEmptyBorder());
+        JButton b = new JButton() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(PALE);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 13, 13);
+                g2.setColor(FOREST);
+                g2.setStroke(new BasicStroke(2.1f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int x = getWidth() / 2;
+                int y = getHeight() / 2;
+                int direction = "‹".equals(symbol) ? 1 : -1;
+                g2.drawLine(x + 3 * direction, y - 6, x - 3 * direction, y);
+                g2.drawLine(x - 3 * direction, y, x + 3 * direction, y + 6);
+                g2.dispose();
+            }
+        };
+        b.setToolTipText("‹".equals(symbol) ? "Ngày trước" : "Ngày tiếp theo");
+        b.setPreferredSize(new Dimension(39, 40));
+        b.setContentAreaFilled(false);
+        b.setBorderPainted(false);
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return b;
@@ -555,14 +586,17 @@ public class BookingPanel extends JPanel implements Scrollable {
             content.add(customerTitle);
             content.add(Box.createVerticalStrut(5));
 
-            customerBox.setFont(AppFonts.regular(11f));
+            customerBox.setFont(AppFonts.regular(11.5f));
             customerBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-            customerBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 31));
+            customerBox.setPreferredSize(new Dimension(220, 38));
+            customerBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
             customerBox.setRenderer(new DefaultListCellRenderer() {
                 @Override public Component getListCellRendererComponent(JList<?> list, Object value,
                         int index, boolean selected, boolean focus) {
                     super.getListCellRendererComponent(list, value, index, selected, focus);
                     if (value instanceof Customer c) setText("#" + c.id() + " - " + c.fullName());
+                    setOpaque(index >= 0);
+                    if (index < 0) setForeground(TEXT);
                     return this;
                 }
             });
@@ -739,7 +773,7 @@ public class BookingPanel extends JPanel implements Scrollable {
                     drawCourts();
                     updateSummary();
                     loadAvailability();
-                    if (missing) JOptionPane.showMessageDialog(BookingPanel.this,
+                    if (missing) MintDialogs.showMessageDialog(BookingPanel.this,
                             "Sân vừa chọn không còn hoạt động, vui lòng chọn sân khác.");
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
@@ -784,7 +818,7 @@ public class BookingPanel extends JPanel implements Scrollable {
                     selectedDate, selectedStart, selectedEnd, "PENDING");
             BigDecimal amount = PriceCalculator.calculate(
                     selectedCourt.pricePerHour(), selectedStart, selectedEnd);
-            int answer = JOptionPane.showConfirmDialog(this,
+            int answer = MintDialogs.showConfirmDialog(this,
                     "Sân: " + selectedCourt.name() + "\nNgày: " + selectedDate.format(DATE_FMT)
                             + "\nGiờ: " + selectedStart + " - " + selectedEnd
                             + "\nTổng tiền: " + formatMoney(amount)
@@ -807,7 +841,7 @@ public class BookingPanel extends JPanel implements Scrollable {
                     updateButtons();
                     try {
                         long id = get();
-                        JOptionPane.showMessageDialog(BookingPanel.this,
+                        MintDialogs.showMessageDialog(BookingPanel.this,
                                 "Đặt sân thành công! Mã đơn #" + id + ".");
                         refreshData();
                         goToPayment.accept(id);
@@ -820,7 +854,7 @@ public class BookingPanel extends JPanel implements Scrollable {
                 }
             }.execute();
         } catch (java.text.ParseException ex) {
-            JOptionPane.showMessageDialog(this, "Ngày không hợp lệ. Hãy nhập dd/MM/yyyy.");
+            MintDialogs.showMessageDialog(this, "Ngày không hợp lệ. Hãy nhập dd/MM/yyyy.");
         } catch (Exception ex) { showError(ex); }
     }
 
@@ -834,11 +868,11 @@ public class BookingPanel extends JPanel implements Scrollable {
     private void paySelected() {
         Booking booking = pickedBooking();
         if (booking == null) {
-            JOptionPane.showMessageDialog(this, "Hãy chọn một đơn trong bảng.");
+            MintDialogs.showMessageDialog(this, "Hãy chọn một đơn trong bảng.");
             return;
         }
         if ("CANCELLED".equalsIgnoreCase(booking.status())) {
-            JOptionPane.showMessageDialog(this, "Đơn này đã hủy.");
+            MintDialogs.showMessageDialog(this, "Đơn này đã hủy.");
             return;
         }
         goToPayment.accept(booking.id());
@@ -848,14 +882,14 @@ public class BookingPanel extends JPanel implements Scrollable {
         if (busy || user == null) return;
         Booking booking = pickedBooking();
         if (booking == null) {
-            JOptionPane.showMessageDialog(this, "Hãy chọn một đơn trong bảng.");
+            MintDialogs.showMessageDialog(this, "Hãy chọn một đơn trong bảng.");
             return;
         }
         if (!"PENDING".equalsIgnoreCase(booking.status())) {
-            JOptionPane.showMessageDialog(this, "Chỉ được hủy đơn đang chờ thanh toán.");
+            MintDialogs.showMessageDialog(this, "Chỉ được hủy đơn đang chờ thanh toán.");
             return;
         }
-        if (JOptionPane.showConfirmDialog(this, "Hủy đơn #" + booking.id() + "?",
+        if (MintDialogs.showConfirmDialog(this, "Hủy đơn #" + booking.id() + "?",
                 "Xác nhận hủy", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
         busy = true;
         updateButtons();
@@ -866,7 +900,7 @@ public class BookingPanel extends JPanel implements Scrollable {
             @Override protected void done() {
                 busy = false;
                 try {
-                    if (get()) JOptionPane.showMessageDialog(BookingPanel.this, "Đã hủy đơn.");
+                    if (get()) MintDialogs.showMessageDialog(BookingPanel.this, "Đã hủy đơn.");
                     refreshData();
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
@@ -888,7 +922,7 @@ public class BookingPanel extends JPanel implements Scrollable {
 
     private void showError(Throwable ex) {
         String msg = ex == null ? "Lỗi không xác định" : ex.getMessage();
-        JOptionPane.showMessageDialog(this,
+        MintDialogs.showMessageDialog(this,
                 (ex instanceof SQLException ? "Lỗi MySQL: " : "Không thể thực hiện: ") + msg,
                 "TH-MINTON", JOptionPane.ERROR_MESSAGE);
     }
@@ -922,6 +956,80 @@ public class BookingPanel extends JPanel implements Scrollable {
 
     private record LoadedData(List<Court> courts, List<Customer> customers,
                               List<Booking> bookings) {}
+
+    /**
+     * JComboBox with a rounded border and an icon drawn in Java2D rather than a
+     * font glyph. Keeps native combo-box selection, keyboard and popup behavior.
+     */
+    private static final class RoundedComboBox<T> extends JComboBox<T> {
+        RoundedComboBox() { this(null); }
+        RoundedComboBox(T[] items) {
+            super();
+            setOpaque(false);
+            setBackground(Color.WHITE);
+            setForeground(TEXT);
+            setFont(AppFonts.medium(11.5f));
+            setBorder(new EmptyBorder(0, 11, 0, 4));
+            setFocusable(true);
+            setUI(new RoundedComboUI());
+            setRenderer(new DefaultListCellRenderer() {
+                @Override public Component getListCellRendererComponent(JList<?> list, Object value,
+                        int index, boolean selected, boolean focus) {
+                    super.getListCellRendererComponent(list, value, index, selected, focus);
+                    setOpaque(index >= 0);
+                    if (index < 0) setForeground(TEXT);
+                    return this;
+                }
+            });
+            if (items != null) for (T item : items) addItem(item);
+        }
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D p = (Graphics2D) g.create();
+            p.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = Math.max(1, getWidth()-1), h = Math.max(1, getHeight()-1);
+            p.setColor(Color.WHITE);
+            p.fillRoundRect(0, 0, w, h, 16, 16);
+            p.setColor(isFocusOwner() ? TEAL : LINE);
+            p.setStroke(new BasicStroke(isFocusOwner() ? 1.5f : 1f));
+            p.drawRoundRect(1, 1, Math.max(0,w-2), Math.max(0,h-2), 16, 16);
+            p.setClip(new RoundRectangle2D.Float(2, 2, Math.max(0,w-3),
+                    Math.max(0,h-3), 15, 15));
+            super.paintComponent(p);
+            p.dispose();
+        }
+    }
+
+    private static final class RoundedComboUI extends BasicComboBoxUI {
+        @Override protected JButton createArrowButton() {
+            JButton b = new JButton() {
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D p = (Graphics2D) g.create();
+                    p.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                            RenderingHints.VALUE_ANTIALIAS_ON);
+                    int x = getWidth()/2, y = getHeight()/2;
+                    p.setColor(PALE);
+                    p.fillRoundRect(1, 3, Math.max(0,getWidth()-3),
+                            Math.max(0,getHeight()-6), 11, 11);
+                    p.setColor(TEAL);
+                    p.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND,
+                            BasicStroke.JOIN_ROUND));
+                    p.drawLine(x-5, y-2, x, y+3);
+                    p.drawLine(x, y+3, x+5, y-2);
+                    p.dispose();
+                }
+            };
+            b.setBorder(BorderFactory.createEmptyBorder());
+            b.setContentAreaFilled(false);
+            b.setFocusPainted(false);
+            b.setOpaque(false);
+            b.setPreferredSize(new Dimension(30, 34));
+            b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            return b;
+        }
+        @Override public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+            // RoundedComboBox already paints the whole rounded surface.
+        }
+    }
 
     private static class RoundedCard extends JPanel {
         private final Color fill;

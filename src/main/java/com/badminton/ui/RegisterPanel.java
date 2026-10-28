@@ -348,7 +348,7 @@ public class RegisterPanel extends JPanel {
 
     private void alert(String message) {
 
-        JOptionPane.showMessageDialog(
+        MintDialogs.showMessageDialog(
             this,
             message,
             "TH-MINTON",

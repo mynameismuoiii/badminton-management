@@ -1,5 +1,7 @@
 package com.badminton.view;
 
+import com.badminton.ui.MintDialogs;
+
 import com.badminton.ui.AuthFrame;
 import com.badminton.model.User;
 import com.badminton.util.AppFonts;
@@ -159,8 +161,9 @@ public class MainFrame extends JFrame {
         }));
         registerScreen("Đặt sân", bookingPanel);
         registerScreen("Lịch đặt sân", new SchedulePanel());
-        registerScreen("Khám phá sân", new SuggestionPanel());
+        registerScreen("Khám phá sân", new SuggestionPanel(this::openBookingCourt));
         registerScreen("Thanh toán", paymentPanel);
+        
 
         // QUẢN TRỊ HỆ THỐNG: register only for ADMIN.
         if (admin) {
@@ -314,116 +317,143 @@ public class MainFrame extends JFrame {
     // HEADER
     // ============================================================
 
+    // Header is a floating, rounded white card with a mint outline.
+    // Keep the same outer margin as the sidebar so their top edges line up.
     private JPanel createHeader() {
+        JPanel outer = new JPanel(new BorderLayout());
+        outer.setOpaque(false);
+        outer.setBackground(CONTENT_BG);
+        outer.setBorder(new EmptyBorder(9, 9, 8, 10));
+        outer.setPreferredSize(new Dimension(0, 96));
 
-        JPanel header =
-                new JPanel(
-                        new BorderLayout()
-                );
+        JPanel header = new RoundedHeaderCard();
+        header.setLayout(new BorderLayout(12, 0));
+        header.setBorder(new EmptyBorder(0, 24, 0, 24));
 
-        header.setBackground(
-                new Color(250, 253, 251)
-        );
+        pageTitle = new JLabel("Tổng quan");
+        pageTitle.setFont(AppFonts.bold(24f));
+        pageTitle.setForeground(TEXT);
+        header.add(pageTitle, BorderLayout.WEST);
 
-        header.setPreferredSize(
-                new Dimension(
-                        0,
-                        78
-                )
-        );
+        // The login name is displayed inside a separate rounded pill.
+        String roleText = admin ? "Quản trị viên" : "Khách hàng";
+        JPanel namePill = new AccountNamePill(currentUser.username() + " (" + roleText + ")");
 
-        header.setBorder(
-                new EmptyBorder(
-                        0,
-                        28,
-                        0,
-                        28
-                )
-        );
+        // Avatar uses the first letter of the actual login username.
+        // E.g. im_muoi -> I. Never use the old fixed initials "TM".
+        JComponent avatar = new AccountAvatar(firstLoginLetter(currentUser.username()));
 
-
-        pageTitle =
-                new JLabel("Tổng quan");
-
-        pageTitle.setFont(
-                AppFonts.bold(24f)
-        );
-
-        pageTitle.setForeground(
-                TEXT
-        );
-
-
-        JPanel right =
-                new JPanel(
-                        new FlowLayout(
-                                FlowLayout.RIGHT,
-                                10,
-                                18
-                        )
-                );
-
+        JPanel right = new JPanel(new GridBagLayout());
         right.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(0, 0, 0, 10);
+        right.add(namePill, gbc);
+        gbc.insets = new Insets(0, 0, 0, 0);
+        right.add(avatar, gbc);
+        header.add(right, BorderLayout.EAST);
 
+        outer.add(header, BorderLayout.CENTER);
+        return outer;
+    }
 
-        JLabel userLabel =
-                new JLabel(
-                        currentUser.username() + " (" +
-                        (admin ? "Quản trị viên" : "Khách hàng") + ")"
-                );
+    private static String firstLoginLetter(String username) {
+        if (username != null) {
+            // Usernames may begin with symbols: use the first actual letter or digit.
+            int cp = username.codePoints()
+                    .filter(Character::isLetterOrDigit)
+                    .findFirst()
+                    .orElse(-1);
+            if (cp != -1) {
+                return new String(Character.toChars(cp))
+                        .toUpperCase(java.util.Locale.forLanguageTag("vi-VN"));
+            }
+        }
+        return "?";
+    }
 
-        userLabel.setFont(
-                AppFonts.medium(13f)
-        );
+    private static final class RoundedHeaderCard extends JPanel {
+        RoundedHeaderCard() { setOpaque(false); }
 
-        userLabel.setForeground(
-                MUTED
-        );
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth();
+            int h = getHeight();
+            if (w <= 6 || h <= 6) { g2.dispose(); return; }
 
+            // Subtle shadow, then rounded white fill and visible green border.
+            g2.setColor(new Color(24, 107, 91, 20));
+            g2.fillRoundRect(2, 4, w - 4, h - 5, 21, 21);
+            g2.setColor(new Color(255, 255, 255));
+            g2.fillRoundRect(1, 1, w - 4, h - 5, 20, 20);
+            g2.setColor(new Color(44, 181, 153));
+            g2.setStroke(new BasicStroke(1.8f));
+            g2.drawRoundRect(2, 2, w - 6, h - 7, 19, 19);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
 
-        JLabel avatar =
-                new JLabel(
-                        "TM",
-                        SwingConstants.CENTER
-                );
+    private static final class AccountNamePill extends JPanel {
+        AccountNamePill(String name) {
+            super(new BorderLayout());
+            setOpaque(false);
+            setBorder(new EmptyBorder(9, 15, 9, 15));
+            JLabel text = new JLabel(name);
+            text.setFont(AppFonts.medium(13f));
+            text.setForeground(TEXT);
+            add(text, BorderLayout.CENTER);
+        }
 
-        avatar.setOpaque(true);
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth(), h = getHeight();
+            g2.setColor(new Color(235, 249, 244));
+            g2.fillRoundRect(0, 0, w - 1, h - 1, h, h);
+            g2.setColor(new Color(192, 229, 218));
+            g2.setStroke(new BasicStroke(1.2f));
+            g2.drawRoundRect(1, 1, w - 3, h - 3, h - 2, h - 2);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
 
-        avatar.setBackground(
-                new Color(217, 249, 239)
-        );
+    private static final class AccountAvatar extends JComponent {
+        private final String initial;
+        AccountAvatar(String initial) {
+            this.initial = initial;
+            setPreferredSize(new Dimension(44, 44));
+            setMinimumSize(new Dimension(44, 44));
+            setMaximumSize(new Dimension(44, 44));
+            setOpaque(false);
+            setToolTipText("Tài khoản: " + initial);
+        }
 
-        avatar.setForeground(
-                PRIMARY_DARK
-        );
-
-        avatar.setFont(
-                AppFonts.bold(12f)
-        );
-
-        avatar.setPreferredSize(
-                new Dimension(
-                        40,
-                        40
-                )
-        );
-
-
-        right.add(userLabel);
-        right.add(avatar);
-
-
-        header.add(
-                pageTitle,
-                BorderLayout.WEST
-        );
-
-        header.add(
-                right,
-                BorderLayout.EAST
-        );
-
-        return header;
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int size = Math.min(getWidth(), getHeight()) - 2;
+            int x = (getWidth() - size) / 2;
+            int y = (getHeight() - size) / 2;
+            g2.setColor(new Color(216, 248, 238));
+            g2.fillOval(x, y, size, size);
+            g2.setColor(new Color(105, 213, 184));
+            g2.setStroke(new BasicStroke(1.5f));
+            g2.drawOval(x + 1, y + 1, size - 2, size - 2);
+            g2.setFont(AppFonts.bold(17f));
+            g2.setColor(new Color(9, 119, 101));
+            FontMetrics fm = g2.getFontMetrics();
+            int tx = (getWidth() - fm.stringWidth(initial)) / 2;
+            int ty = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+            g2.drawString(initial, tx, ty);
+            g2.dispose();
+        }
     }
 
 
@@ -540,484 +570,301 @@ public class MainFrame extends JFrame {
     }
 
 
+    /**
+     * Mo man hinh Dat san voi dung san nguoi dung chon tu Kham pha san.
+     * Khong sua BookingPanel hay logic dat san hien co.
+     */
+    public void openBookingCourt(long courtId) {
+        if (courtId <= 0) return;
+        bookingPanel.selectCourt(courtId);
+        showScreen("Đặt sân");
+    }
+
     // ============================================================
     // HOME / DASHBOARD
     // ============================================================
 
+    // ============================================================
+    // HOME: rounded hero, about card, six animated service tiles.
+    // This section only changes the overview UI; other routes remain intact.
+    // ============================================================
     private JPanel createHomePanel() {
-
-        JPanel wrapper = new JPanel();
-
-        wrapper.setLayout(
-                new BoxLayout(
-                        wrapper,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
+        HomeStack wrapper = new HomeStack();
+        wrapper.setLayout(new BoxLayout(wrapper, BoxLayout.Y_AXIS));
         wrapper.setBackground(CONTENT_BG);
+        wrapper.setBorder(new EmptyBorder(18, 19, 28, 19));
 
-        wrapper.setBorder(
-                new EmptyBorder(
-                        0,
-                        0,
-                        40,
-                        0
-                )
-        );
-
-        // Để trang đủ dài cho JScrollPane cuộn như web
-        wrapper.setPreferredSize(
-                new Dimension(
-                        1000,
-                        1050
-                )
-        );
-
-
-        // =====================================================
-        // HERO SECTION
-        // =====================================================
-
-        HeroPanel hero = new HeroPanel(
-                "/images/home-hero.jpg" // <-- đổi ảnh ở đây
-        );
-
-        hero.setPreferredSize(
-                new Dimension(
-                        1000,
-                        440
-                )
-        );
-
-        hero.setMaximumSize(
-                new Dimension(
-                        Integer.MAX_VALUE,
-                        440
-                )
-        );
-
-        hero.setLayout(
-                new GridBagLayout()
-        );
-
+        HeroPanel hero = new HeroPanel("/images/home-hero.jpg");
+        hero.setLayout(new GridBagLayout());
+        hero.setAlignmentX(Component.LEFT_ALIGNMENT);
+        hero.setPreferredSize(new Dimension(900, 355));
+        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 355));
+        hero.setMinimumSize(new Dimension(640, 355));
 
         JPanel heroContent = new JPanel();
-
         heroContent.setOpaque(false);
+        heroContent.setLayout(new BoxLayout(heroContent, BoxLayout.Y_AXIS));
 
-        heroContent.setLayout(
-                new BoxLayout(
-                        heroContent,
-                        BoxLayout.Y_AXIS
-                )
-        );
+        JLabel welcome = new JLabel("WELCOME TO TH - MINTON");
+        welcome.setAlignmentX(Component.CENTER_ALIGNMENT);
+        welcome.setForeground(new Color(105, 243, 210));
+        welcome.setFont(AppFonts.bold(20f));
 
+        JLabel heroTitle = new JLabel("Your Court. Your Game. Your Moment.");
+        heroTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        heroTitle.setForeground(Color.WHITE);
+        heroTitle.setFont(AppFonts.fredoka(34f));
 
-        JLabel smallTitle =
-                new JLabel(
-                        "WELCOME TO TH - MINTON"
-                );
+        JLabel heroDescription = new JLabel("<html><div style='text-align:center'>"
+                + "Quản lý sân cầu lông dễ dàng, theo dõi lịch đặt và tìm sân phù hợp"
+                + "<br>chỉ trong vài thao tác.</div></html>", SwingConstants.CENTER);
+        heroDescription.setAlignmentX(Component.CENTER_ALIGNMENT);
+        heroDescription.setForeground(new Color(235, 251, 247));
+        heroDescription.setFont(AppFonts.regular(13f));
+        heroDescription.setMaximumSize(new Dimension(650, 56));
 
-        smallTitle.setAlignmentX(
-                Component.CENTER_ALIGNMENT
-        );
-
-        smallTitle.setForeground(new Color(105, 243, 210));
-
-        // Bold that remains visible even with variable font files.
-        smallTitle.setFont(
-                AppFonts.bold(22f).deriveFont(Font.BOLD, 22f)
-        );
-
-
-        JLabel heroTitle =
-                new JLabel(
-                        "Your Court. Your Game. Your Moment."
-                );
-
-        heroTitle.setAlignmentX(
-                Component.CENTER_ALIGNMENT
-        );
-
-        heroTitle.setForeground(
-                Color.WHITE
-        );
-
-        heroTitle.setFont(
-                AppFonts.fredoka(36f)
-        );
-
-
-        JLabel heroDescription =
-                new JLabel(
-                        "<html><div style='text-align:center;'>"
-                        + "Quản lý sân cầu lông dễ dàng, "
-                        + "theo dõi lịch đặt và tìm sân phù hợp "
-                        + "chỉ trong vài thao tác."
-                        + "</div></html>"
-                );
-
-        heroDescription.setAlignmentX(
-                Component.CENTER_ALIGNMENT
-        );
-
-        heroDescription.setHorizontalAlignment(
-                SwingConstants.CENTER
-        );
-
-        heroDescription.setForeground(new Color(232, 249, 243));
-
-        heroDescription.setFont(
-                AppFonts.regular(14f)
-        );
-
-        heroDescription.setMaximumSize(
-                new Dimension(
-                        600,
-                        60
-                )
-        );
-
-
-        // Button with rounded corners and a gentle inset hover effect.
         JButton bookingButton = new HeroBookingButton("Đặt sân ngay");
         bookingButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        bookingButton.addActionListener(e -> showScreen("Đặt sân"));
+        bookingButton.addActionListener(e -> { bookingPanel.refreshData(); showScreen("Đặt sân"); });
 
-        heroContent.add(smallTitle);
-
-        heroContent.add(
-                Box.createRigidArea(
-                        new Dimension(
-                                0,
-                                12
-                        )
-                )
-        );
-
+        heroContent.add(welcome);
+        heroContent.add(Box.createVerticalStrut(11));
         heroContent.add(heroTitle);
-
-        heroContent.add(
-                Box.createRigidArea(
-                        new Dimension(
-                                0,
-                                16
-                        )
-                )
-        );
-
+        heroContent.add(Box.createVerticalStrut(15));
         heroContent.add(heroDescription);
-
-        heroContent.add(
-                Box.createRigidArea(
-                        new Dimension(
-                                0,
-                                24
-                        )
-                )
-        );
-
+        heroContent.add(Box.createVerticalStrut(23));
         heroContent.add(bookingButton);
-
-
         hero.add(heroContent);
-
-
         wrapper.add(hero);
+        wrapper.add(Box.createVerticalStrut(17));
 
+        // ABOUT: white rounded card instead of a full-width sharp rectangle.
+        RoundedHomeSurface about = new RoundedHomeSurface(Color.WHITE);
+        about.setLayout(new BorderLayout());
+        about.setBorder(new EmptyBorder(25, 37, 24, 35));
+        about.setAlignmentX(Component.LEFT_ALIGNMENT);
+        about.setPreferredSize(new Dimension(900, 188));
+        about.setMaximumSize(new Dimension(Integer.MAX_VALUE, 188));
 
-        // =====================================================
-        // INTRO / ABOUT SECTION
-        // =====================================================
-
-        JPanel aboutSection =
-                new JPanel(
-                        new BorderLayout(
-                                35,
-                                0
-                        )
-                );
-
-        aboutSection.setBackground(
-                Color.WHITE
-        );
-
-        aboutSection.setBorder(
-                new EmptyBorder(
-                        45,
-                        55,
-                        45,
-                        55
-                )
-        );
-
-        aboutSection.setMaximumSize(
-                new Dimension(
-                        Integer.MAX_VALUE,
-                        260
-                )
-        );
-
-
-        // ------------------
-        // LEFT
-        // ------------------
-
-        JPanel aboutText =
-                new JPanel();
-
+        JPanel aboutText = new JPanel();
         aboutText.setOpaque(false);
-
-        aboutText.setLayout(
-                new BoxLayout(
-                        aboutText,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
-
-        JLabel aboutSmall =
-                new JLabel(
-                        "ABOUT US"
-                );
-
-        aboutSmall.setForeground(
-                PRIMARY_DARK
-        );
-
-        aboutSmall.setFont(
-                AppFonts.medium(12f)
-        );
-
-
-        JLabel aboutTitle =
-                new JLabel(
-                        "Quản lý sân thông minh hơn"
-                );
-
-        aboutTitle.setForeground(
-                TEXT
-        );
-
-        aboutTitle.setFont(
-                AppFonts.bold(25f)
-        );
-
-
-        JLabel aboutDescription =
-                new JLabel(
-                        "<html>"
-                        + "TH - MINTON giúp quản lý sân, khách hàng, "
-                        + "lịch đặt và thanh toán trong cùng một hệ thống."
-                        + "<br><br>"
-                        + "Theo dõi trạng thái sân nhanh chóng và "
-                        + "tìm khung giờ phù hợp thuận tiện hơn."
-                        + "</html>"
-                );
-
-        aboutDescription.setForeground(
-                MUTED
-        );
-
-        aboutDescription.setFont(
-                AppFonts.regular(13f)
-        );
-
-
+        aboutText.setLayout(new BoxLayout(aboutText, BoxLayout.Y_AXIS));
+        JLabel aboutSmall = new JLabel("ABOUT US");
+        aboutSmall.setFont(AppFonts.bold(12f));
+        aboutSmall.setForeground(PRIMARY_DARK);
+        JLabel aboutTitle = new JLabel("Quản lý sân thông minh hơn");
+        // Use the same rounded Fredoka family as the TH-MINTON brand.
+        Font aboutFont = AppFonts.fredoka(26f);
+        if (aboutFont.canDisplayUpTo(aboutTitle.getText()) != -1) {
+            aboutFont = AppFonts.bold(26f);
+        }
+        aboutTitle.setFont(aboutFont);
+        aboutTitle.setForeground(TEXT);
+        JLabel aboutDescription = new JLabel("<html>TH - MINTON giúp quản lý sân, khách hàng, lịch đặt "
+                + "và thanh toán trong cùng một hệ thống.<br><br>"
+                + "Theo dõi trạng thái sân nhanh chóng và tìm khung giờ phù hợp thuận tiện hơn.</html>");
+        aboutDescription.setFont(AppFonts.regular(12f));
+        aboutDescription.setForeground(MUTED);
         aboutText.add(aboutSmall);
-
-        aboutText.add(
-                Box.createRigidArea(
-                        new Dimension(
-                                0,
-                                8
-                        )
-                )
-        );
-
+        aboutText.add(Box.createVerticalStrut(7));
         aboutText.add(aboutTitle);
-
-        aboutText.add(
-                Box.createRigidArea(
-                        new Dimension(
-                                0,
-                                14
-                        )
-                )
-        );
-
+        aboutText.add(Box.createVerticalStrut(10));
         aboutText.add(aboutDescription);
+        about.add(aboutText, BorderLayout.CENTER);
+        wrapper.add(about);
+        wrapper.add(Box.createVerticalStrut(17));
 
+        // SERVICES: 2 rows of 3 compact blended cards, with hover inset.
+        RoundedHomeSurface services = new RoundedHomeSurface(new Color(248, 253, 251));
+        services.setLayout(new BorderLayout(0, 18));
+        services.setBorder(new EmptyBorder(25, 25, 26, 25));
+        services.setAlignmentX(Component.LEFT_ALIGNMENT);
+        services.setPreferredSize(new Dimension(900, 468));
+        services.setMaximumSize(new Dimension(Integer.MAX_VALUE, 468));
 
-        // ------------------
-        // RIGHT
-        // ------------------
+        JPanel heading = new JPanel();
+        heading.setOpaque(false);
+        heading.setLayout(new BoxLayout(heading, BoxLayout.Y_AXIS));
+        JLabel serviceTitle = new JLabel("Khám phá TH - MINTON");
+        // Fredoka gives this heading a friendlier appearance; fall back if glyphs are absent.
+        Font headingFont = AppFonts.fredoka(27f);
+        if (headingFont.canDisplayUpTo(serviceTitle.getText()) != -1) {
+            headingFont = AppFonts.bold(27f);
+        }
+        serviceTitle.setFont(headingFont);
+        serviceTitle.setForeground(TEXT);
+        JLabel subtitle = new JLabel("Mọi tiện ích cho một buổi cầu lông trọn vẹn");
+        subtitle.setFont(AppFonts.regular(12f));
+        subtitle.setForeground(MUTED);
+        heading.add(serviceTitle);
+        heading.add(Box.createVerticalStrut(5));
+        heading.add(subtitle);
+        services.add(heading, BorderLayout.NORTH);
 
-
-
-
-        aboutSection.add(
-                aboutText,
-                BorderLayout.CENTER
-        );
-
-
-        wrapper.add(aboutSection);
-
-
-        // =====================================================
-        // QUICK SERVICES
-        // =====================================================
-
-        JPanel services =
-                new JPanel(
-                        new BorderLayout()
-                );
-
-        services.setBackground(
-                CONTENT_BG
-        );
-
-        services.setBorder(
-                new EmptyBorder(
-                        40,
-                        55,
-                        40,
-                        55
-                )
-        );
-
-
-        JLabel serviceTitle =
-                new JLabel(
-                        "Khám phá TH - MINTON"
-                );
-
-        serviceTitle.setFont(
-                AppFonts.bold(24f)
-        );
-
-        serviceTitle.setForeground(
-                TEXT
-        );
-
-
-        JPanel serviceCards =
-                new JPanel(
-                        new GridLayout(
-                                1,
-                                3,
-                                18,
-                                0
-                        )
-                );
-
-        serviceCards.setOpaque(false);
-
-        serviceCards.setPreferredSize(
-            new Dimension(
-                    1000,
-                    420
-            )
-    );
-
-        serviceCards.setBorder(
-                new EmptyBorder(
-                        25,
-                        0,
-                        0,
-                        0
-                )
-        );
-
-
-        serviceCards.add(
-            createImageCard(
-                    "Có sân trên toàn Việt Nam",
-                    "/images/service-1.jpg"
-            )
-    );
-
-    serviceCards.add(
-            createImageCard(
-                    "Đặt sân nhanh chóng",
-                    "/images/service-2.jpg"
-            )
-    );
-
-    serviceCards.add(
-            createImageCard(
-                    "Tận hưởng từng trận đấu",
-                    "/images/service-3.jpg"
-            )
-    );
-
-
-        services.add(
-                serviceTitle,
-                BorderLayout.NORTH
-        );
-
-        services.add(
-                serviceCards,
-                BorderLayout.CENTER
-        );
-
-
+        JPanel cards = new JPanel(new GridLayout(2, 3, 13, 13));
+        cards.setOpaque(false);
+        cards.add(createServiceTile("Khám phá nhiều sân", "Tìm sân phù hợp với bạn",
+                "Danh sách sân", "list", new Color(11, 91, 83), new Color(17, 139, 122)));
+        cards.add(createServiceTile("Đặt sân nhanh chóng", "Chọn sân và giờ mong muốn",
+                "Đặt sân", "booking", new Color(13, 107, 98), new Color(20, 155, 143)));
+        cards.add(createServiceTile("Tận hưởng trận đấu", "Sẵn sàng cho mỗi cuộc hẹn",
+                "Khám phá sân", "explore", new Color(13, 88, 103), new Color(20, 130, 138)));
+        cards.add(createServiceTile("Xem lịch dễ dàng", "Theo dõi các lịch đã đặt",
+                "Lịch đặt sân", "calendar", new Color(13, 86, 91), new Color(35, 138, 132)));
+        cards.add(createServiceTile("Thanh toán tiện lợi", "Kiểm tra và thanh toán nhanh",
+                "Thanh toán", "payment", new Color(12, 100, 87), new Color(28, 150, 120)));
+        cards.add(createServiceTile("Gợi ý sân phù hợp", "Khám phá thêm lựa chọn mới",
+                "Khám phá sân", "explore", new Color(17, 90, 108), new Color(31, 143, 147)));
+        services.add(cards, BorderLayout.CENTER);
         wrapper.add(services);
 
         return wrapper;
     }
-    private JPanel createImageCard(
-            String title,
-            String imagePath
-    ) {
 
-        ImageCard card =
-                new ImageCard(
-                        imagePath,
-                        24
-                );
+    private JButton createServiceTile(String title, String description,
+                                      String screen, String iconName,
+                                      Color top, Color bottom) {
+        ServiceTile tile = new ServiceTile(title, description, iconName, top, bottom);
+        tile.setToolTipText("Mở trang: " + screen);
+        tile.addActionListener(e -> {
+            if ("Đặt sân".equals(screen)) bookingPanel.refreshData();
+            if ("Thanh toán".equals(screen)) paymentPanel.refreshData();
+            showScreen(screen);
+        });
+        return tile;
+    }
 
-        card.setLayout(
-                new BorderLayout()
-        );
+    // Keep the overview full width when the window is resized; scroll vertically only.
+    private static final class HomeStack extends JPanel implements Scrollable {
+        @Override public Dimension getPreferredScrollableViewportSize() {
+            return new Dimension(850, 700);
+        }
+        @Override public int getScrollableUnitIncrement(Rectangle visible, int axis, int direction) {
+            return 20;
+        }
+        @Override public int getScrollableBlockIncrement(Rectangle visible, int axis, int direction) {
+            return Math.max(100, visible.height - 60);
+        }
+        @Override public boolean getScrollableTracksViewportWidth() { return true; }
+        @Override public boolean getScrollableTracksViewportHeight() { return false; }
+    }
 
-        card.setBorder(
-                new EmptyBorder(
-                        22,
-                        22,
-                        22,
-                        22
-                )
-        );
+    private static final class RoundedHomeSurface extends JPanel {
+        private final Color fill;
+        RoundedHomeSurface(Color fill) { this.fill = fill; setOpaque(false); }
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D gg = (Graphics2D) g.create();
+            gg.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth(), h = getHeight();
+            gg.setColor(new Color(9, 70, 61, 12));
+            gg.fillRoundRect(2, 3, w - 4, h - 5, 24, 24);
+            gg.setColor(fill);
+            gg.fillRoundRect(0, 0, w - 3, h - 5, 24, 24);
+            gg.setColor(new Color(211, 232, 224));
+            gg.setStroke(new BasicStroke(1f));
+            gg.drawRoundRect(1, 1, w - 5, h - 7, 23, 23);
+            gg.dispose();
+            super.paintComponent(g);
+        }
+    }
 
-        JLabel titleLabel =
-                new JLabel(
-                        "<html>"
-                        + title
-                        + "</html>"
-                );
+    private static final class ServiceTile extends JButton {
+        private boolean hovered;
+        private final String title;
+        private final String description;
+        private final String iconName;
+        private final Color start;
+        private final Color end;
 
-        titleLabel.setFont(
-                AppFonts.bold(22f)
-        );
+        ServiceTile(String title, String description, String iconName, Color start, Color end) {
+            super("");
+            this.title = title;
+            this.description = description;
+            this.iconName = iconName;
+            this.start = start;
+            this.end = end;
+            setForeground(Color.WHITE);
+            setOpaque(false);
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            getAccessibleContext().setAccessibleName(title);
+            addMouseListener(new MouseAdapter() {
+                @Override public void mouseEntered(MouseEvent e) {
+                    hovered = true;
+                    repaint();
+                }
+                @Override public void mouseExited(MouseEvent e) {
+                    hovered = false;
+                    repaint();
+                }
+            });
+        }
 
-        titleLabel.setForeground(
-                Color.WHITE
-        );
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D gg = (Graphics2D) g.create();
+            gg.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            int inset = getModel().isPressed() ? 10 : hovered ? 6 : 2;
+            int x = inset;
+            int y = inset;
+            int w = Math.max(2, getWidth() - inset * 2);
+            int h = Math.max(2, getHeight() - inset * 2 - 2);
 
-        titleLabel.setVerticalAlignment(
-                SwingConstants.TOP
-        );
+            // The gradient and border shrink symmetrically when hovered / pressed.
+            gg.setColor(new Color(10, 64, 56, hovered ? 14 : 22));
+            gg.fillRoundRect(x, y + 3, w, h, 23, 23);
+            gg.setClip(new java.awt.geom.RoundRectangle2D.Float(x, y, w, h, 22, 22));
+            gg.setPaint(new GradientPaint(x, y, hovered ? start.brighter() : start,
+                    x + w, y + h, hovered ? end.brighter() : end));
+            gg.fillRoundRect(x, y, w, h, 22, 22);
+            gg.setPaint(new RadialGradientPaint(new Point(x + w * 3 / 4, y + 15),
+                    Math.max(80, w * 3 / 4), new float[]{0f, 1f},
+                    new Color[]{new Color(186, 255, 235, hovered ? 85 : 55),
+                            new Color(186, 255, 235, 0)}));
+            gg.fillRoundRect(x, y, w, h, 22, 22);
+            gg.setClip(null);
+            gg.setColor(new Color(207, 255, 241, hovered ? 150 : 65));
+            gg.setStroke(new BasicStroke(1f));
+            gg.drawRoundRect(x, y, w - 1, h - 1, 22, 22);
 
-        card.add(
-                titleLabel,
-                BorderLayout.NORTH
-        );
+            // All content is painted around the ACTUAL middle of the tile.
+            // This avoids the off-center icon caused by BoxLayout stretching a JComponent.
+            Font titleFont = AppFonts.bold(16f);
+            Font hintFont = AppFonts.regular(11f);
+            int availableWidth = Math.max(70, getWidth() - 42);
+            for (float size = 16f; size >= 12f; size -= 1f) {
+                Font candidate = AppFonts.bold(size);
+                titleFont = candidate;
+                if (gg.getFontMetrics(candidate).stringWidth(title) <= availableWidth) break;
+            }
+            FontMetrics titleMetrics = gg.getFontMetrics(titleFont);
+            FontMetrics hintMetrics = gg.getFontMetrics(hintFont);
+            int blockHeight = 40 + 12 + titleMetrics.getHeight() + 6 + hintMetrics.getHeight();
+            int top = (getHeight() - blockHeight) / 2;
+            int centerX = getWidth() / 2;
 
-        return card;
+            // Icon circle and vector icon: both centered horizontally.
+            int iconX = centerX - 20;
+            gg.setColor(new Color(219, 255, 244, 40));
+            gg.fillOval(iconX + 1, top + 1, 38, 38);
+            gg.setColor(new Color(228, 255, 247));
+            gg.setStroke(new BasicStroke(1.5f));
+            gg.drawOval(iconX + 1, top + 1, 38, 38);
+            new MenuIcon(iconName).paintIcon(this, gg, centerX - 9, top + 10);
+
+            int titleY = top + 40 + 12 + titleMetrics.getAscent();
+            gg.setColor(Color.WHITE);
+            gg.setFont(titleFont);
+            gg.drawString(title, centerX - titleMetrics.stringWidth(title) / 2, titleY);
+
+            int hintY = top + 40 + 12 + titleMetrics.getHeight() + 6 + hintMetrics.getAscent();
+            gg.setFont(hintFont);
+            gg.setColor(new Color(215, 249, 239));
+            gg.drawString(description, centerX - hintMetrics.stringWidth(description) / 2, hintY);
+            gg.dispose();
+        }
     }
 
     // ============================================================
@@ -1029,7 +876,7 @@ public class MainFrame extends JFrame {
         logout.setPreferredSize(new Dimension(240, 48));
         logout.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         logout.addActionListener(e -> {
-            int choice = JOptionPane.showConfirmDialog(this,
+            int choice = MintDialogs.showConfirmDialog(this,
                     "Bạn có muốn đăng xuất?", "TH - MINTON",
                     JOptionPane.YES_NO_OPTION);
             if (choice == JOptionPane.YES_OPTION) {
@@ -1109,8 +956,16 @@ public class MainFrame extends JFrame {
                         radius, radius);
             }
 
+            // Draw text using FontMetrics so it is exactly centered in both axes,
+            // independent of the active Swing Look & Feel / button insets.
+            String label = getText();
+            FontMetrics fm = g2.getFontMetrics(getFont());
+            int textX = (getWidth() - fm.stringWidth(label)) / 2;
+            int textY = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+            g2.setColor(getForeground());
+            g2.setFont(getFont());
+            g2.drawString(label, textX, textY);
             g2.dispose();
-            super.paintComponent(g);
         }
     }
 
@@ -1434,6 +1289,9 @@ public class MainFrame extends JFrame {
                 g2.dispose();
                 return;
             }
+            // All hero effects are clipped, including the image/glow and court arcs.
+            g2.setClip(new java.awt.geom.RoundRectangle2D.Float(
+                    0, 0, w - 1, h - 1, 27, 27));
 
             // Exact gradient endpoints from the splash/login screen.
             g2.setPaint(new GradientPaint(0, 0, SPLASH_START,

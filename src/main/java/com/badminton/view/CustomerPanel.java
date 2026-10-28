@@ -1,5 +1,7 @@
 package com.badminton.view;
 
+import com.badminton.ui.MintDialogs;
+
 import com.badminton.dao.CustomerManagementDAO.BookingHistory;
 import com.badminton.dao.CustomerManagementDAO.Summary;
 import com.badminton.model.User;
@@ -26,6 +28,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
+import javax.swing.table.JTableHeader;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 
 /** TH - MINTON / Customer Management / design 2: statistic cards + customer grid. */
 public final class CustomerPanel extends JPanel {
@@ -35,6 +39,8 @@ public final class CustomerPanel extends JPanel {
     private static final Color MINT = new Color(72, 222, 190);
     private static final Color DARK = new Color(7, 56, 50);
     private static final Color BORDER = new Color(211, 231, 225);
+    private static final Color PALE = new Color(245, 252, 249);
+    private static final Color ROW_ALT = new Color(237, 250, 245);
     private static final Color RED = new Color(185, 55, 65);
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter HOUR = DateTimeFormatter.ofPattern("HH:mm");
@@ -44,9 +50,9 @@ public final class CustomerPanel extends JPanel {
     private final JTable table = new JTable(model);
     private final TableRowSorter<CustomerTableModel> sorter = new TableRowSorter<>(model);
     private final JTextField search = new HintField("Tìm theo tên, SĐT hoặc email...");
-    private final JComboBox<String> kind = new JComboBox<>(new String[]{
+    private final JComboBox<String> kind = new RoundedCombo(new String[]{
             "Tất cả khách", "Có tài khoản", "Khách"});
-    private final JButton refresh = button("↻  Làm mới", Color.WHITE, DARK);
+    private final JButton refresh = button("Làm mới", Color.WHITE, DARK);
     private final JButton add = button("+  Thêm khách hàng", MINT, DARK);
     private final JLabel totalValue = statValue("0");
     private final JLabel accountValue = statValue("0");
@@ -73,6 +79,7 @@ public final class CustomerPanel extends JPanel {
 
         model.setRows(List.of());
         configureTable();
+        MintDropdown.install(kind);
 
         search.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { updateFilter(); }
@@ -146,11 +153,14 @@ public final class CustomerPanel extends JPanel {
     }
 
     private JPanel statCard(String title, JLabel number) {
-        JPanel card = roundCard(Color.WHITE, 18);
-        card.setLayout(new BorderLayout(0, 7));
-        card.setBorder(new EmptyBorder(15, 13, 13, 12));
+        Color shade = title.equals("Tổng khách hàng") ? new Color(236, 253, 246)
+                : title.equals("Có tài khoản") ? new Color(238, 249, 255)
+                : new Color(255, 249, 233);
+        JPanel card = roundCard(shade, 21);
+        card.setLayout(new BorderLayout(0, 10));
+        card.setBorder(new EmptyBorder(15, 15, 13, 12));
         JLabel label = new JLabel(title);
-        label.setFont(AppFonts.medium(11f));
+        label.setFont(AppFonts.medium(11.5f));
         label.setForeground(MUTED);
         card.add(label, BorderLayout.NORTH);
         card.add(number, BorderLayout.CENTER);
@@ -165,24 +175,20 @@ public final class CustomerPanel extends JPanel {
     }
 
     private JPanel createToolbar() {
-        JPanel bar = roundCard(Color.WHITE, 16);
-        bar.setLayout(new BorderLayout(10, 0));
-        bar.setBorder(new EmptyBorder(12, 14, 12, 14));
-        bar.setPreferredSize(new Dimension(500, 67));
+        JPanel bar = roundCard(Color.WHITE, 22);
+        bar.setLayout(new BorderLayout(12, 0));
+        bar.setBorder(new EmptyBorder(13, 15, 13, 15));
+        bar.setPreferredSize(new Dimension(500, 73));
 
         search.setFont(AppFonts.regular(13f));
         search.setToolTipText("Tìm theo họ tên, số điện thoại hoặc email");
-        search.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER),
-                new EmptyBorder(7, 12, 7, 9)));
-        search.setPreferredSize(new Dimension(220, 38));
+        search.setPreferredSize(new Dimension(220, 43));
         bar.add(search, BorderLayout.CENTER);
 
-        JPanel options = new JPanel(new FlowLayout(FlowLayout.RIGHT, 9, 0));
+        JPanel options = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         options.setOpaque(false);
-        kind.setFont(AppFonts.regular(12.5f));
-        kind.setPreferredSize(new Dimension(133, 38));
-        kind.setBackground(Color.WHITE);
+        kind.setFont(AppFonts.medium(12.5f));
+        kind.setPreferredSize(new Dimension(160, 43));
         options.add(kind);
         options.add(refresh);
         options.add(add);
@@ -191,19 +197,47 @@ public final class CustomerPanel extends JPanel {
     }
 
     private JPanel createTableCard() {
-        JPanel card = roundCard(Color.WHITE, 16);
-        card.setLayout(new BorderLayout(0, 0));
-        card.setBorder(new EmptyBorder(8, 10, 8, 10));
+        JPanel card = roundCard(Color.WHITE, 22);
+        card.setLayout(new BorderLayout(0, 12));
+        card.setBorder(new EmptyBorder(17, 16, 14, 16));
+
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.setOpaque(false);
+        JLabel title = new JLabel("DANH SÁCH KHÁCH HÀNG");
+        title.setFont(AppFonts.bold(13f));
+        title.setForeground(TEXT);
+        JLabel info = new JLabel("Chọn biểu tượng mắt để xem lịch sử đặt sân");
+        info.setFont(AppFonts.regular(11.5f));
+        info.setForeground(MUTED);
+        bar.add(title, BorderLayout.WEST);
+        bar.add(info, BorderLayout.EAST);
+        card.add(bar, BorderLayout.NORTH);
 
         JScrollPane pane = new JScrollPane(table,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        pane.setBorder(null);
-        pane.getViewport().setBackground(Color.WHITE);
-        pane.getVerticalScrollBar().setUnitIncrement(18);
+        pane.setBorder(BorderFactory.createLineBorder(new Color(226, 239, 234), 1, true));
+        pane.getViewport().setBackground(PALE);
+        pane.getVerticalScrollBar().setUnitIncrement(20);
         card.add(pane, BorderLayout.CENTER);
-        card.setPreferredSize(new Dimension(750, 340));
+
+        JPanel guide = roundCard(new Color(240, 251, 247), 16);
+        guide.setLayout(new FlowLayout(FlowLayout.LEFT, 19, 11));
+        guide.add(legend("●", "Xem hồ sơ & lịch sử", new Color(23, 133, 116)));
+        guide.add(legend("●", "Chỉnh sửa thông tin", new Color(16, 156, 124)));
+        guide.add(legend("●", "Xóa khi đủ điều kiện", new Color(211, 80, 90)));
+        guide.setPreferredSize(new Dimension(700, 39));
+        card.add(guide, BorderLayout.SOUTH);
+        card.setPreferredSize(new Dimension(750, 355));
         return card;
+    }
+
+    private static JLabel legend(String symbol, String text, Color color) {
+        JLabel label = new JLabel("<html><font color='" + String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue())
+                + "'>" + symbol + "</font>&nbsp; " + text + "</html>");
+        label.setForeground(MUTED);
+        label.setFont(AppFonts.regular(11f));
+        return label;
     }
 
     private JPanel createFooter() {
@@ -219,39 +253,35 @@ public final class CustomerPanel extends JPanel {
     }
 
     private void configureTable() {
-        table.setRowHeight(52);
+        table.setRowHeight(56);
         table.setFont(AppFonts.regular(12.5f));
-        table.setGridColor(new Color(233, 242, 237));
+        table.setGridColor(new Color(224, 239, 232));
         table.setShowVerticalLines(false);
-        table.setSelectionBackground(new Color(228, 250, 242));
+        table.setShowHorizontalLines(true);
+        table.setIntercellSpacing(new Dimension(0, 1));
+        table.setBackground(PALE);
+        table.setSelectionBackground(new Color(209, 247, 230));
         table.setSelectionForeground(TEXT);
-        table.setFillsViewportHeight(true);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        table.setFillsViewportHeight(false);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.setRowSorter(sorter);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.getTableHeader().setReorderingAllowed(false);
-        table.getTableHeader().setBackground(new Color(232, 246, 241));
-        table.getTableHeader().setForeground(TEXT);
-        table.getTableHeader().setFont(AppFonts.bold(11.5f));
-        table.getTableHeader().setPreferredSize(new Dimension(0, 43));
+        JTableHeader header = table.getTableHeader();
+        header.setReorderingAllowed(false);
+        header.setResizingAllowed(true);
+        header.setPreferredSize(new Dimension(0, 50));
+        header.setDefaultRenderer(new HeaderRenderer());
 
-        int[] widths = {56, 192, 123, 183, 109, 74, 130, 182};
+        int[] widths = {55, 187, 140, 171, 126, 82, 135, 170};
         for (int i = 0; i < widths.length; i++) {
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+            table.getColumnModel().getColumn(i).setMinWidth(i == 7 ? 150 : (i == 0 ? 44 : 64));
         }
-        DefaultTableCellRenderer normal = new DefaultTableCellRenderer() {
-            @Override public Component getTableCellRendererComponent(JTable t, Object value,
-                            boolean selected, boolean focus, int row, int col) {
-                super.getTableCellRendererComponent(t, value, selected, focus, row, col);
-                setBorder(new EmptyBorder(0, 9, 0, 7));
-                setFont(AppFonts.regular(12f));
-                setForeground(TEXT);
-                if (!selected) setBackground(row % 2 == 0 ? Color.WHITE : new Color(250, 253, 251));
-                return this;
-            }
-        };
+        SoftCellRenderer normal = new SoftCellRenderer();
         for (int c = 0; c <= 6; c++) table.getColumnModel().getColumn(c).setCellRenderer(normal);
+        table.getColumnModel().getColumn(0).setCellRenderer(new PillCellRenderer(new Color(226, 244, 238), DARK));
         table.getColumnModel().getColumn(4).setCellRenderer(new TypeBadgeRenderer());
+        table.getColumnModel().getColumn(5).setCellRenderer(new PillCellRenderer(new Color(232, 244, 253), new Color(33, 106, 146)));
         table.getColumnModel().getColumn(6).setCellRenderer(new MoneyRenderer());
         table.getColumnModel().getColumn(7).setCellRenderer(new ActionRenderer());
         table.getColumnModel().getColumn(7).setCellEditor(new ActionEditor());
@@ -264,6 +294,77 @@ public final class CustomerPanel extends JPanel {
                 }
             }
         });
+    }
+
+    private static Color rowColor(JTable t, int row, boolean selected) {
+        return selected ? t.getSelectionBackground() : (row % 2 == 0 ? Color.WHITE : ROW_ALT);
+    }
+
+    private static class HeaderRenderer extends JLabel implements TableCellRenderer {
+        HeaderRenderer() {
+            setHorizontalAlignment(CENTER);
+            setVerticalAlignment(CENTER);
+            setOpaque(true);
+            setBackground(new Color(222, 246, 237));
+            setForeground(TEXT);
+            setFont(AppFonts.bold(11.5f));
+            setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(139, 212, 187)));
+        }
+        @Override public Component getTableCellRendererComponent(JTable t, Object value,
+                boolean selected, boolean focus, int row, int col) {
+            setText(value == null ? "" : value.toString());
+            return this;
+        }
+    }
+
+    private static class SoftCellRenderer extends DefaultTableCellRenderer {
+        @Override public Component getTableCellRendererComponent(JTable t, Object value,
+                boolean selected, boolean focus, int row, int col) {
+            super.getTableCellRendererComponent(t, value, selected, focus, row, col);
+            setBorder(new EmptyBorder(0, 12, 0, 8));
+            setBackground(rowColor(t, row, selected));
+            setForeground(TEXT);
+            setFont(AppFonts.regular(12f));
+            setVerticalAlignment(CENTER);
+            return this;
+        }
+    }
+
+    private static final class PillLabel extends JLabel {
+        private final Color fill;
+        PillLabel(String value, Color fill, Color textColor) {
+            super(value, SwingConstants.CENTER);
+            this.fill = fill;
+            setFont(AppFonts.medium(11.5f));
+            setForeground(textColor);
+            setBorder(new EmptyBorder(7, 11, 7, 11));
+            setOpaque(false);
+        }
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D p = (Graphics2D) g.create();
+            p.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            p.setColor(fill);
+            p.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
+            p.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    private static JPanel cellPill(JTable t, int row, boolean selected, JLabel label) {
+        JPanel wrap = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 12));
+        wrap.setOpaque(true);
+        wrap.setBackground(rowColor(t, row, selected));
+        wrap.add(label);
+        return wrap;
+    }
+
+    private static class PillCellRenderer implements TableCellRenderer {
+        private final Color bg, ink;
+        PillCellRenderer(Color bg, Color ink) { this.bg = bg; this.ink = ink; }
+        @Override public Component getTableCellRendererComponent(JTable t, Object value,
+                boolean selected, boolean focus, int row, int col) {
+            return cellPill(t, row, selected, new PillLabel(String.valueOf(value), bg, ink));
+        }
     }
 
     private void reload() {
@@ -342,7 +443,7 @@ public final class CustomerPanel extends JPanel {
         form.add(formLabel("Email (không bắt buộc)")); form.add(email);
 
         String title = selected == null ? "Thêm khách hàng" : "Chỉnh sửa khách hàng #" + selected.id();
-        int answer = JOptionPane.showConfirmDialog(this, form, title,
+        int answer = MintDialogs.showConfirmDialog(this, form, title,
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (answer != JOptionPane.OK_OPTION) return;
         String newName = name.getText(), newPhone = phone.getText(), newEmail = email.getText();
@@ -357,13 +458,13 @@ public final class CustomerPanel extends JPanel {
 
     private void delete(Summary customer) {
         if (customer.hasAccount() || customer.bookingCount() > 0) {
-            JOptionPane.showMessageDialog(this,
+            MintDialogs.showMessageDialog(this,
                     "Không thể xóa khách có tài khoản hoặc đã từng đặt sân.\n"
                     + "Bạn vẫn có thể sửa hồ sơ và xem lịch sử đặt.",
                     "Không được phép xóa", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        int answer = JOptionPane.showConfirmDialog(this,
+        int answer = MintDialogs.showConfirmDialog(this,
                 "Xóa khách '" + customer.fullName() + "'?\nThao tác này không thể hoàn tác.",
                 "Xác nhận xóa khách hàng", JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE);
@@ -412,20 +513,34 @@ public final class CustomerPanel extends JPanel {
         Window owner = SwingUtilities.getWindowAncestor(this);
         JDialog dialog = new JDialog(owner, "Lịch sử đặt sân - " + customer.fullName(),
                 Dialog.ModalityType.MODELESS);
-        JPanel root = new JPanel(new BorderLayout(0, 13));
+        JPanel root = new JPanel(new BorderLayout(0, 16));
         root.setBackground(BG);
-        root.setBorder(new EmptyBorder(19, 20, 20, 20));
+        root.setBorder(new EmptyBorder(21, 22, 20, 22));
+
+        JPanel summary = roundCard(new Color(224, 250, 240), 24);
+        summary.setLayout(new BorderLayout(18, 0));
+        summary.setBorder(new EmptyBorder(18, 20, 18, 20));
+        JPanel intro = new JPanel(new GridLayout(2, 1, 0, 6));
+        intro.setOpaque(false);
         JLabel head = new JLabel("Lịch sử đặt sân · " + customer.fullName());
-        head.setFont(AppFonts.bold(19f));
-        head.setForeground(TEXT);
-        JLabel meta = new JLabel("Đang đọc dữ liệu...");
+        head.setFont(AppFonts.bold(20f));
+        head.setForeground(DARK);
+        JLabel meta = new JLabel("Đang đọc lịch sử từ MySQL...");
         meta.setFont(AppFonts.medium(12f));
         meta.setForeground(MUTED);
-        JPanel top = new JPanel(new BorderLayout(0, 8));
-        top.setOpaque(false);
-        top.add(head, BorderLayout.NORTH);
-        top.add(meta, BorderLayout.SOUTH);
-        root.add(top, BorderLayout.NORTH);
+        intro.add(head);
+        intro.add(meta);
+        summary.add(intro, BorderLayout.CENTER);
+
+        JPanel stats = new JPanel(new GridLayout(1, 2, 10, 0));
+        stats.setOpaque(false);
+        JLabel tripsValue = statValue("0");
+        JLabel paidValue = statValue("0 đ");
+        stats.add(statCard("Lượt đặt", tripsValue));
+        stats.add(statCard("Đã thanh toán", paidValue));
+        stats.setPreferredSize(new Dimension(320, 78));
+        summary.add(stats, BorderLayout.EAST);
+        root.add(summary, BorderLayout.NORTH);
 
         String[] cols = {"Mã đặt", "Sân", "Ngày", "Giờ", "Trạng thái",
                 "Giá/giờ hiện tại", "Ước tính hiện tại", "Đã thanh toán", "Phương thức"};
@@ -434,24 +549,62 @@ public final class CustomerPanel extends JPanel {
         };
         JTable historyTable = new JTable(historyModel);
         historyTable.setFont(AppFonts.regular(12f));
-        historyTable.getTableHeader().setFont(AppFonts.bold(11.5f));
-        historyTable.getTableHeader().setBackground(new Color(230, 246, 241));
-        historyTable.setRowHeight(38);
-        historyTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        int[] widths = {82, 125, 90, 112, 110, 125, 135, 125, 116};
-        for (int i = 0; i < widths.length; i++)
+        historyTable.setRowHeight(56);
+        historyTable.setGridColor(new Color(226, 241, 233));
+        historyTable.setShowVerticalLines(false);
+        historyTable.setShowHorizontalLines(true);
+        historyTable.setIntercellSpacing(new Dimension(0, 1));
+        historyTable.setSelectionBackground(new Color(211, 250, 234));
+        historyTable.setSelectionForeground(TEXT);
+        historyTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        historyTable.setFillsViewportHeight(false);
+        historyTable.setBackground(PALE);
+        historyTable.getTableHeader().setPreferredSize(new Dimension(0, 50));
+        historyTable.getTableHeader().setReorderingAllowed(false);
+        historyTable.getTableHeader().setDefaultRenderer(new HeaderRenderer());
+        int[] widths = {75, 156, 98, 117, 129, 126, 131, 125, 114};
+        for (int i = 0; i < widths.length; i++) {
             historyTable.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
-        JScrollPane scroll = new JScrollPane(historyTable);
-        scroll.setBorder(BorderFactory.createLineBorder(BORDER));
-        root.add(scroll, BorderLayout.CENTER);
+            historyTable.getColumnModel().getColumn(i).setMinWidth(62);
+            historyTable.getColumnModel().getColumn(i).setCellRenderer(new SoftCellRenderer());
+        }
+        historyTable.getColumnModel().getColumn(0).setCellRenderer(
+                new PillCellRenderer(new Color(224, 243, 240), DARK));
+        historyTable.getColumnModel().getColumn(4).setCellRenderer(new HistoryStatusRenderer());
+        for (int i : new int[]{5, 6, 7})
+            historyTable.getColumnModel().getColumn(i).setCellRenderer(new HistoryMoneyRenderer());
 
-        JLabel note = new JLabel("Ước tính dựa trên GIÁ SÂN HIỆN TẠI; số tiền đã thu lấy từ payments.");
-        note.setFont(AppFonts.regular(12f));
+        JPanel panel = roundCard(Color.WHITE, 22);
+        panel.setBorder(new EmptyBorder(16, 15, 15, 15));
+        panel.setLayout(new BorderLayout(0, 12));
+        JLabel section = new JLabel("CHI TIẾT CÁC LƯỢT ĐẶT");
+        section.setFont(AppFonts.bold(13f));
+        section.setForeground(DARK);
+        panel.add(section, BorderLayout.NORTH);
+        JScrollPane scroll = new JScrollPane(historyTable,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scroll.getViewport().setBackground(PALE);
+        scroll.setBorder(BorderFactory.createLineBorder(BORDER, 1, true));
+        scroll.getVerticalScrollBar().setUnitIncrement(19);
+        panel.add(scroll, BorderLayout.CENTER);
+        root.add(panel, BorderLayout.CENTER);
+
+        JPanel footer = new JPanel(new BorderLayout(12, 0));
+        footer.setOpaque(false);
+        JLabel note = new JLabel("Ước tính dựa trên giá sân hiện tại; số tiền đã thu lấy từ payments.");
+        note.setFont(AppFonts.regular(11.5f));
         note.setForeground(MUTED);
-        root.add(note, BorderLayout.SOUTH);
+        footer.add(note, BorderLayout.CENTER);
+        JButton close = button("Đóng", Color.WHITE, DARK);
+        close.setPreferredSize(new Dimension(100, 39));
+        close.addActionListener(e -> dialog.dispose());
+        footer.add(close, BorderLayout.EAST);
+        root.add(footer, BorderLayout.SOUTH);
+
         dialog.setContentPane(root);
-        dialog.setSize(990, 540);
-        dialog.setMinimumSize(new Dimension(790, 410));
+        dialog.setSize(1175, 570);
+        dialog.setMinimumSize(new Dimension(950, 420));
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
 
@@ -474,18 +627,47 @@ public final class CustomerPanel extends JPanel {
                                 b.actuallyPaid() == null ? "Chưa ghi nhận" : money(b.actuallyPaid()),
                                 b.paymentMethod() == null ? "—" : b.paymentMethod()});
                     }
-                    meta.setText(bookings.size() + " lượt đặt (gồm cả đơn hủy) · Đã thanh toán: "
-                            + money(actualPaid));
+                    tripsValue.setText(String.valueOf(bookings.size()));
+                    paidValue.setText(money(actualPaid));
+                    meta.setText(bookings.isEmpty() ? "Chưa có lượt đặt sân nào"
+                            : bookings.size() + " lượt đặt (bao gồm cả đơn hủy)");
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     meta.setText("Tải bị gián đoạn");
                 } catch (ExecutionException ex) {
                     meta.setText("Không tải được lịch sử");
-                    JOptionPane.showMessageDialog(dialog, readable(ex), "Lỗi database",
+                    MintDialogs.showMessageDialog(dialog, readable(ex), "Lỗi database",
                             JOptionPane.ERROR_MESSAGE);
                 }
             }
         }.execute();
+    }
+
+    private static final class HistoryStatusRenderer implements TableCellRenderer {
+        @Override public Component getTableCellRendererComponent(JTable t, Object value,
+                boolean selected, boolean focus, int row, int col) {
+            String status = String.valueOf(value);
+            Color bg, ink;
+            if (status.equals("Đã xác nhận")) {
+                bg = new Color(214, 249, 226); ink = new Color(8, 126, 82);
+            } else if (status.equals("Đã hủy")) {
+                bg = new Color(255, 229, 231); ink = new Color(186, 65, 72);
+            } else {
+                bg = new Color(255, 239, 198); ink = new Color(158, 110, 12);
+            }
+            return cellPill(t, row, selected, new PillLabel(status, bg, ink));
+        }
+    }
+
+    private static final class HistoryMoneyRenderer extends SoftCellRenderer {
+        @Override public Component getTableCellRendererComponent(JTable t, Object value,
+                boolean selected, boolean focus, int row, int col) {
+            super.getTableCellRendererComponent(t, value, selected, focus, row, col);
+            setForeground(col == 7 ? new Color(5, 138, 105) : DARK);
+            setFont(AppFonts.bold(11.5f));
+            setHorizontalAlignment(RIGHT);
+            return this;
+        }
     }
 
     private static String translateBookingStatus(String status) {
@@ -512,7 +694,7 @@ public final class CustomerPanel extends JPanel {
     }
 
     private void showError(String description) {
-        JOptionPane.showMessageDialog(this, description, "TH - MINTON", JOptionPane.ERROR_MESSAGE);
+        MintDialogs.showMessageDialog(this, description, "TH - MINTON", JOptionPane.ERROR_MESSAGE);
     }
 
     private static JLabel formLabel(String text) {
@@ -541,11 +723,11 @@ public final class CustomerPanel extends JPanel {
                         ? new Color(100, 233, 202) : background;
                 p.setColor(fill);
                 p.fillRoundRect(inset, inset, getWidth() - 2 * inset,
-                        getHeight() - 2 * inset, 14, 14);
+                        getHeight() - 2 * inset, 22, 22);
                 if (background.equals(Color.WHITE)) {
                     p.setColor(BORDER);
                     p.drawRoundRect(inset, inset, getWidth() - 2 * inset - 1,
-                            getHeight() - 2 * inset - 1, 14, 14);
+                            getHeight() - 2 * inset - 1, 22, 22);
                 }
                 p.dispose();
                 super.paintComponent(g);
@@ -561,23 +743,102 @@ public final class CustomerPanel extends JPanel {
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b.setFocusPainted(false);
         b.setBorder(new EmptyBorder(9, 13, 9, 13));
-        b.setPreferredSize(new Dimension(text.startsWith("+") ? 166 : 104, 38));
+        b.setPreferredSize(new Dimension(text.startsWith("+") ? 173 : 105, 43));
         return b;
     }
 
     private static final class HintField extends JTextField {
         private final String hint;
-        HintField(String hint) { this.hint = hint; }
+        HintField(String hint) {
+            this.hint = hint;
+            setOpaque(false);
+            setBorder(new EmptyBorder(8, 15, 8, 15));
+            setForeground(TEXT);
+            setCaretColor(DARK);
+        }
         @Override protected void paintComponent(Graphics g) {
+            Graphics2D p = (Graphics2D) g.create();
+            p.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            p.setColor(new Color(248, 253, 251));
+            p.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 22, 22);
+            p.setColor(isFocusOwner() ? new Color(52, 195, 165) : BORDER);
+            p.setStroke(new BasicStroke(isFocusOwner() ? 1.5f : 1f));
+            p.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 22, 22);
+            p.dispose();
             super.paintComponent(g);
             if (!getText().isEmpty() || isFocusOwner()) return;
-            Graphics2D p = (Graphics2D) g.create();
+            p = (Graphics2D) g.create();
             p.setColor(MUTED);
             p.setFont(AppFonts.regular(12f));
             int y = (getHeight() + p.getFontMetrics().getAscent()
                     - p.getFontMetrics().getDescent()) / 2;
-            p.drawString(hint, 12, y);
+            p.drawString(hint, 15, y);
             p.dispose();
+        }
+    }
+
+    private static final class RoundedCombo extends JComboBox<String> {
+        RoundedCombo(String[] items) {
+            super(items);
+            setOpaque(false);
+            setFocusable(true);
+            setBackground(Color.WHITE);
+            setForeground(TEXT);
+            setBorder(new EmptyBorder(1, 11, 1, 2));
+            setUI(new BasicComboBoxUI() {
+                @Override protected JButton createArrowButton() {
+                    JButton arrow = new JButton() {
+                        @Override protected void paintComponent(Graphics g) {
+                            Graphics2D p = (Graphics2D) g.create();
+                            p.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                            p.setColor(new Color(221, 248, 239));
+                            p.fillOval(4, (getHeight() - 26) / 2, 26, 26);
+                            p.setColor(DARK);
+                            p.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                            int y = getHeight() / 2;
+                            p.drawLine(13, y - 2, 17, y + 2);
+                            p.drawLine(17, y + 2, 21, y - 2);
+                            p.dispose();
+                        }
+                    };
+                    arrow.setPreferredSize(new Dimension(36, 36));
+                    arrow.setContentAreaFilled(false);
+                    arrow.setBorderPainted(false);
+                    arrow.setFocusPainted(false);
+                    arrow.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                    return arrow;
+                }
+                @Override public void paintCurrentValueBackground(Graphics g, Rectangle b, boolean focus) {
+                    // Parent paints the soft rounded background.
+                }
+            });
+            setRenderer(new DefaultListCellRenderer() {
+                @Override public Component getListCellRendererComponent(JList<?> list,
+                        Object value, int index, boolean selected, boolean focus) {
+                    super.getListCellRendererComponent(list, value, index, selected, focus);
+                    setFont(AppFonts.regular(12.5f));
+                    setBorder(new EmptyBorder(7, 8, 7, 8));
+                    if (index < 0) {
+                        setOpaque(false);
+                        setForeground(TEXT);
+                    } else {
+                        setOpaque(true);
+                        setForeground(selected ? Color.WHITE : TEXT);
+                        setBackground(selected ? new Color(20, 144, 121) : Color.WHITE);
+                    }
+                    return this;
+                }
+            });
+        }
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D p = (Graphics2D) g.create();
+            p.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            p.setColor(new Color(248, 253, 251));
+            p.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 21, 21);
+            p.setColor(BORDER);
+            p.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 21, 21);
+            p.dispose();
+            super.paintComponent(g);
         }
     }
 
@@ -588,7 +849,10 @@ public final class CustomerPanel extends JPanel {
                 p.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                         RenderingHints.VALUE_ANTIALIAS_ON);
                 p.setColor(color);
-                p.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+                p.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, radius, radius);
+                p.setColor(new Color(205, 230, 220));
+                p.setStroke(new BasicStroke(0.8f));
+                p.drawRoundRect(0, 0, getWidth() - 2, getHeight() - 2, radius, radius);
                 p.dispose();
                 super.paintComponent(g);
             }
@@ -632,33 +896,23 @@ public final class CustomerPanel extends JPanel {
         }
     }
 
-    private static final class TypeBadgeRenderer extends DefaultTableCellRenderer {
-        @Override public Component getTableCellRendererComponent(JTable table, Object value,
-                   boolean selected, boolean focus, int row, int column) {
-            JPanel wrap = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 13));
-            if (!selected) wrap.setBackground(row % 2 == 0 ? Color.WHITE : new Color(250, 253, 251));
-            else wrap.setBackground(table.getSelectionBackground());
-            JLabel badge = new JLabel(String.valueOf(value));
-            badge.setOpaque(true);
-            badge.setFont(AppFonts.medium(11f));
-            badge.setBorder(new EmptyBorder(5, 9, 5, 9));
+    private static final class TypeBadgeRenderer implements TableCellRenderer {
+        @Override public Component getTableCellRendererComponent(JTable t, Object value,
+                boolean selected, boolean focus, int row, int col) {
             boolean account = "Có tài khoản".equals(value);
-            badge.setBackground(account ? new Color(218, 249, 231) : new Color(237, 243, 245));
-            badge.setForeground(account ? new Color(4, 125, 80) : MUTED);
-            wrap.add(badge);
-            return wrap;
+            return cellPill(t, row, selected, new PillLabel(String.valueOf(value),
+                    account ? new Color(215, 248, 226) : new Color(255, 241, 208),
+                    account ? new Color(3, 126, 79) : new Color(155, 103, 18)));
         }
     }
 
-    private static final class MoneyRenderer extends DefaultTableCellRenderer {
-        @Override public Component getTableCellRendererComponent(JTable table, Object value,
-                   boolean selected, boolean focus, int row, int column) {
-            super.getTableCellRendererComponent(table, money((BigDecimal)value), selected, focus, row, column);
+    private static final class MoneyRenderer extends SoftCellRenderer {
+        @Override public Component getTableCellRendererComponent(JTable t, Object value,
+                boolean selected, boolean focus, int row, int col) {
+            super.getTableCellRendererComponent(t, money((BigDecimal)value), selected, focus, row, col);
             setHorizontalAlignment(SwingConstants.RIGHT);
-            setBorder(new EmptyBorder(0, 6, 0, 10));
-            setFont(AppFonts.bold(11.5f));
-            setForeground(DARK);
-            if (!selected) setBackground(row % 2 == 0 ? Color.WHITE : new Color(250, 253, 251));
+            setFont(AppFonts.bold(12f));
+            setForeground(new Color(3, 134, 98));
             return this;
         }
     }
@@ -666,7 +920,7 @@ public final class CustomerPanel extends JPanel {
     // Action buttons with vector icons; no extra image files or libraries needed.
     // The button name remains Xem/Sửa/Xóa, so the existing database actions are preserved.
     private static JPanel actionsPanel(boolean editMode) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 7, 8));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 9, 9));
         panel.setOpaque(false);
         for (String action : new String[]{"Xem", "Sửa", "Xóa"}) {
             ActionIconButton button = new ActionIconButton(action);
@@ -709,9 +963,9 @@ public final class CustomerPanel extends JPanel {
                 }
             }
             getAccessibleContext().setAccessibleName(action + " khách hàng");
-            setPreferredSize(new Dimension(36, 36));
-            setMinimumSize(new Dimension(36, 36));
-            setMaximumSize(new Dimension(36, 36));
+            setPreferredSize(new Dimension(37, 37));
+            setMinimumSize(new Dimension(37, 37));
+            setMaximumSize(new Dimension(37, 37));
             setFocusPainted(false);
             setBorderPainted(false);
             setContentAreaFilled(false);
@@ -732,11 +986,11 @@ public final class CustomerPanel extends JPanel {
             int w = Math.max(1, getWidth() - inset * 2);
             int h = Math.max(1, getHeight() - inset * 2);
             p.setColor(hovered ? rollover : normal);
-            p.fillRoundRect(inset, inset, w, h, 11, 11);
+            p.fillOval(inset, inset, w, h);
             if (hovered || isFocusOwner()) {
                 p.setColor(new Color(ink.getRed(), ink.getGreen(), ink.getBlue(), 85));
                 p.setStroke(new BasicStroke(1.1f));
-                p.drawRoundRect(inset, inset, w - 1, h - 1, 11, 11);
+                p.drawOval(inset, inset, w - 1, h - 1);
             }
 
             int cx = getWidth() / 2;
@@ -781,7 +1035,7 @@ public final class CustomerPanel extends JPanel {
         @Override public Component getTableCellRendererComponent(JTable table, Object value,
                          boolean selected, boolean focus, int row, int col) {
             JPanel p = actionsPanel(false);
-            p.setBackground(selected ? table.getSelectionBackground() : Color.WHITE);
+            p.setBackground(rowColor(table, row, selected));
             p.setOpaque(true);
             return p;
         }
@@ -814,7 +1068,7 @@ public final class CustomerPanel extends JPanel {
         @Override public Component getTableCellEditorComponent(JTable table, Object value,
                          boolean selected, int row, int column) {
             editingRow = row;
-            panel.setBackground(table.getSelectionBackground());
+            panel.setBackground(rowColor(table, row, selected));
             panel.setOpaque(true);
             return panel;
         }

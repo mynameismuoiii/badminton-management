@@ -255,7 +255,7 @@ public class LoginPanel extends JPanel {
 
     private void alert(String message) {
 
-        JOptionPane.showMessageDialog(
+        MintDialogs.showMessageDialog(
             this,
             message,
             "TH-MINTON",
@@ -320,8 +320,9 @@ public class LoginPanel extends JPanel {
             new Color(211, 242, 237)
         );
 
+        // In dam ten cac truong (dung chung cho dang nhap va dang ky).
         label.setFont(
-            AppFonts.medium(13f)
+            AppFonts.bold(13f)
         );
 
         box.add(
@@ -350,7 +351,18 @@ public class LoginPanel extends JPanel {
             Runnable action
     ) {
 
-        JButton button = new JButton(text);
+        // Chi in dam phan hanh dong, giu nguyen phan goi y phia truoc.
+        String displayText = text;
+        if ("Chưa có tài khoản? Đăng ký".equals(text)) {
+            displayText = "<html>Chưa có tài khoản? <b>Đăng ký</b></html>";
+        } else if ("Đã có tài khoản? Đăng nhập".equals(text)) {
+            displayText = "<html>Đã có tài khoản? <b>Đăng nhập</b></html>";
+        }
+
+        JButton button = new JButton(displayText);
+
+        // HTML link van phai can trai nhu link thong thuong.
+        button.setHorizontalAlignment(SwingConstants.LEFT);
 
         button.setAlignmentX(
             Component.LEFT_ALIGNMENT

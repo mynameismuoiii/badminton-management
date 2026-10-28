@@ -1,5 +1,7 @@
 package com.badminton.view;
 
+import com.badminton.ui.MintDialogs;
+
 import java.awt.GridLayout;
 
 import javax.swing.JButton;
@@ -46,7 +48,7 @@ public class LoginFrame extends JFrame {
             // Gọi AuthService.login().
             // Đăng nhập thành công thì mở MainFrame.
 
-            JOptionPane.showMessageDialog(
+            MintDialogs.showMessageDialog(
                     this,
                     "TODO N1: kết nối AuthService"
             );

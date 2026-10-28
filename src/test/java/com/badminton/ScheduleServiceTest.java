@@ -1,18 +1,19 @@
+
 package com.badminton;
+
+import com.badminton.util.TimeSlotUtil;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalTime;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
-
-import com.badminton.util.TimeSlotUtil;
 
 class ScheduleServiceTest {
 
     @Test
     void overlap() {
 
-        boolean result = TimeSlotUtil.overlaps(
+        boolean result = TimeSlotUtil.isOverlap(
                 LocalTime.of(8, 0),
                 LocalTime.of(9, 0),
                 LocalTime.of(8, 30),
