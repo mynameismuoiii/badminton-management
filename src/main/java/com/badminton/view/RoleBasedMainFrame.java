@@ -238,7 +238,7 @@ public final class RoleBasedMainFrame extends JFrame {
             // Nguoi 1: Quan ly khach hang
             addScreen(
                 "Quản lý khách hàng",
-                new CustomerPanel()
+                new CustomerPanel(user)
             );
 
         } else {
